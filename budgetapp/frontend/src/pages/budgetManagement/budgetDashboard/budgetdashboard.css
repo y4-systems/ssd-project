@@ -1,0 +1,110 @@
+.navigation-container {
+    display: flex;
+}
+
+.innerLayout {
+    padding: 2rem 1.5rem;
+    width: 100%;
+}
+
+.stats-con {
+    margin-top: 30px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 2rem;
+}
+
+.stats-con .chart-con {
+    grid-column: 1 / 4;
+    height: 400px;
+}
+
+.stats-con .chart-con .amount-con {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.stats-con .chart-con .amount-con .income,
+.expense {
+    grid-column: span 2;
+}
+
+.stats-con .chart-con .amount-con .income{
+    background: #ffffff;
+    border: 2px solid green;
+    box-shadow: 0px 1px 15px rgba(0, 0, 0, 0.06);
+    border-radius: 20px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.3rem;
+}
+
+.stats-con .chart-con .amount-con .expense
+{
+    background: #ffffff;
+    border: 2px solid red;
+    box-shadow: 0px 1px 15px rgba(0, 0, 0, 0.06);
+    border-radius: 20px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.3rem;
+}
+
+.stats-con .chart-con .amount-con .balance
+{
+    background: #ffffff;
+    border: 2px solid #4d1c9c;
+    box-shadow: 0px 1px 15px rgba(0, 0, 0, 0.06);
+    border-radius: 20px;
+    padding: 0.9rem;
+    grid-column: 2 / 4;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.4rem;
+}
+
+.stats-con .history-con {
+    grid-column: 4 / -1;
+    margin-left: 100px;
+}
+
+.stats-con .history-con h2 {
+    margin: 1rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.stats-con .history-con .salary-title {
+    font-size: 1.2rem;
+}
+
+.stats-con .history-con .salary-title span {
+    font-size: 1.8rem;
+}
+
+.stats-con .history-con .salary-item {
+    background: #FCF6F9;
+    border: 2px solid #FFFFFF;
+    box-shadow: 0px 1px 15px rgba(0, 0, 0, 0.06);
+    padding: 1rem;
+    border-radius: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stats-con .history-con .salary-item p {
+    font-weight: 600;
+    font-size: 1.6rem;
+}

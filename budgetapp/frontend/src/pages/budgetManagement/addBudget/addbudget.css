@@ -1,0 +1,64 @@
+.addBudget {
+    width: 80%;
+    max-width: 600px;
+    margin: 10px auto;
+    padding: 30px 50px;
+    background-color: white; /* Set content background color to white */
+    border-radius: 10px;
+    border: 1px solid #e0e0e0; /* Add border */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Add box shadow */
+    height: fit-content;
+}
+
+
+.addBudgetForm {
+    margin-top: 20px;
+    /* text-align: center; */
+}
+
+.inputGroup {
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.inputGroup input:focus,
+.inputGroup textarea:focus {
+    border-color: #4169e1; /* Highlighting input fields when focused */
+}
+
+.addBudgetForm button.submit {
+    width: 100%;
+    padding: 15px;
+    background-color: #4d1c9c;
+    color: white;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.addBudgetForm button.submit:hover {
+    background-color: #8252a2;
+}
+
+.addBudget h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #333; /* Darker text color for headings */
+}
+
+.inputGroup .flexContainer {
+    display: flex;
+    justify-content: space-between;
+}
+
+.inputGroup .flexContainer > div {
+    width: calc(50% - 5px); /* Half width with 5px spacing */
+}
+
+.inputGroup .flexContainer > div:first-child {
+    margin-right: 10px; /* Margin between the fields */
+}
+

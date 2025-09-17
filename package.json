@@ -1,0 +1,17 @@
+{
+  "name": "microfrontend-monorepo",
+  "private": true,
+  "workspaces": [
+    "mainapp/frontend",
+    "vendorapp/frontend",
+    "guestapp/frontend",
+    "eventapp/frontend"
+  ],
+  "devDependencies": {
+    "lerna": "^7.1.1"
+  },
+  "scripts": {
+    "start": "lerna run start --parallel",
+    "clean": "lerna clean"
+  }
+}

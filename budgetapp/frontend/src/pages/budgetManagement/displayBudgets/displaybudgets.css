@@ -1,0 +1,75 @@
+.main-container {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+    padding: 20px;
+    background: #F5F5F5;
+}
+
+.navigation-container {
+    display: flex;
+}
+
+.main-content {
+    flex: 1;
+    margin-left: 300px;
+    display: flex;
+    /* justify-content: center; */
+    /* align-items: center; */
+    /* background: rgba(252, 246, 249, 0.78);
+    border: 3px solid #FFFFFF;
+    backdrop-filter: blur(5px);
+    border-radius: 32px; */
+    overflow: auto;
+    overflow-x: hidden;
+    padding: 30px;
+    height: 82vh;
+}
+
+.main-content::-webkit-scrollbar {
+    width: 0;
+};
+
+.budget-card-container {
+    display: flex;
+    flex-direction: row;
+    padding-top: 20px;
+
+}
+
+.submit-btn {
+    margin-bottom: 20px;
+}
+
+.addButton {
+    text-decoration: none;
+    background-color: #4d1c9c;
+    color: white;
+    font-weight: 500;
+    box-shadow: 1px 1px 8px rgba(0, 0, 0, 0.065);
+    border-radius: 5px;
+    padding: 10px;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    -ms-border-radius: 5px;
+    -o-border-radius: 5px;
+}
+
+.addButton:hover {
+    background-color: #8252a2;
+}
+
+.budget-card-row {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+  }
+
+  .budget-cards {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); /* 5 cards per row */
+    gap: 20px; /* spacing between cards */
+    margin-top: 20px; /* adjust as needed */
+  }
+  
+  

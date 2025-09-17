@@ -1,0 +1,166 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500&display=swap');
+
+
+
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.bs1 {
+  box-shadow: rgba(14, 30, 37, 0.12) 0px 2px 4px 0px, rgba(14, 30, 37, 0.32) 0px 2px 16px 0px;
+}
+.bs2 {
+  box-shadow: rgba(14, 30, 37, 0.12) 0px 2px 4px 0px, rgba(14, 30, 37, 0.32) 0px 2px 16px 0px;
+  background-color: #4d1c9c;
+}
+
+h1 {
+  font-size: 30px;
+  font-weight: bold;
+  color: darkslategray;
+}
+
+.header {
+  padding: 10px;
+
+}
+
+.header .ant-btn {
+  box-shadow: none !important;
+  background-color: white !important;
+  color: red !important;
+  border: 1px solid red !important;
+  padding: 5px 15px !important;
+  outline: none !important;
+}
+.footer{
+  background-color:darkslategray ;
+  color: white;
+  height: 200px;
+}
+
+.content {
+  min-height: 90vh;
+
+}
+
+.btn1 {
+  box-shadow: none !important;
+  background-color:#4d1c9c !important;
+  color: rgb(255, 255, 255) !important;
+  border: 1px solid #4d1c9c !important;
+  padding: 5px 15px !important;
+  outline: none !important;
+}
+
+.carimg {
+  height: 180px;
+  width: 270px;
+  border-radius: 5px;
+  transform: translateY(-50px);
+}
+
+p {
+  margin: 5px !important;
+
+  padding: 0;
+}
+
+.spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 9999;
+}
+
+.occasion {
+  border-radius: 5px;
+  margin-top: 100px;
+  height: 160px;
+  transition: 0.3s;
+}
+
+.occasion:hover {
+  height: 220px;
+}
+
+.occasion-content {
+  transform: translateY(-40px);
+  opacity: 0;
+  transition: 0.4s;
+}
+
+.occasion:hover>.occasion-content {
+  opacity: 1;
+  transform: translateY();
+}
+
+.login {
+  background-color: rgb(238, 238, 238);
+  padding-top: 50px;
+  min-height: 100vh;
+  background-image: url('https://images.pexels.com/photos/752842/pexels-photo-752842.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1');
+}
+
+.login label,
+.login h1 {
+  color: black !important;
+  opacity: 1;
+}
+
+.login-form {
+  background-color: #ffff;
+}
+
+.login-form input {
+  background-color: rgb(238, 238, 238) !important;
+  border: none;
+  color: black ;
+  opacity: 1;
+}
+
+.login-logo {
+  position: absolute !important;
+  left: 0;
+  right: 0;
+  top: 50%;
+  bottom: 50%;
+  transform: translateY(-50%, -50%);
+  font-size: 45px;
+  opacity: 1 !important;
+
+
+}
+
+.loginimg {
+  height: 600px;
+
+}
+
+.login a {
+  color: rgb(0, 0, 0) !important;
+  opacity: 1;
+}
+
+a {
+  text-decoration: none !important;
+}
+
+.carimg2 {
+  height: 400px !important;
+  border-radius: 10px;
+  width: auto;
+}
+
+svg {
+  height: 20px !important;
+  width: 20px !important;
+}

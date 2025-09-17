@@ -1,0 +1,30 @@
+  
+  .budget-details-heading {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+  
+  .budget-details p {
+    margin-bottom: 10px;
+  }
+  
+  .budget-details p strong {
+    margin-right: 5px;
+  }
+
+  .download-button{
+    width: 100%;
+    padding: 15px;
+    background-color: #4d1c9c;
+    color: white;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 50px;
+  }
+  
+  .download-button:hover {
+    background-color: #8252a2;
+  }

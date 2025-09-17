@@ -1,0 +1,147 @@
+.ExpenseStyle {
+    display: flex;
+    overflow: auto;
+}
+
+.innerStyleExpense {
+    padding: 2rem 1.5rem;
+    width: 100%;
+}
+
+.total-expense {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* background: #f1edf9; */
+    background: #ffffff;
+    border: 2px solid #4d1c9c;
+    box-shadow: 0px 1px 15px rgba(0, 0, 0, 0.06);
+    border-radius: 20px;
+    padding: 1rem;
+    margin: 1rem 0;
+    font-size: 1.5rem;
+    gap: 0.5rem;
+}
+
+.total-expense span {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: red;
+}
+
+.expense-content {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    align-items: center;
+}
+
+.expenses {
+    margin-left: 200px;
+}
+
+.expense-content .expenses {
+    flex: 1;
+}
+
+.error-message {
+    color: red;
+    font-weight: bold;
+}
+
+/* Hidden scrollbar */
+.expenseStyle {
+    display: flex;
+    overflow-y: scroll;
+}
+
+.expenseStyle::-webkit-scrollbar {
+    width: 0;
+}
+
+.expenseStyle {
+    scrollbar-width: none;
+}
+
+.total-expense,
+.total-income {
+    width: 450px;
+}
+
+
+.flex-container {
+    display: flex;
+}
+
+.innerStyleIncome,
+.innerStyleExpense {
+    padding: 2rem 1.5rem;
+    flex: 1;
+}
+
+
+
+.incomeStyle {
+    display: flex;
+    overflow: auto;
+}
+
+.innerStyleIncome {
+    padding: 2rem 1.5rem;
+    width: 100%;
+}
+
+.total-income {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* background: #f1edf9; */
+    background: #ffffff;
+    border: 2px solid #4d1c9c;
+    box-shadow: 0px 1px 15px rgba(0, 0, 0, 0.06);
+    border-radius: 20px;
+    padding: 1rem;
+    margin: 1rem 0;
+    font-size: 1.5rem;
+    gap: 0.5rem;
+}
+
+.total-income span {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #42ad00;
+}
+
+.income-content {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    align-items: center;
+}
+
+.incomes {
+    margin-left: 200px;
+}
+
+.income-content .incomes {
+    flex: 1;
+}
+
+.error-message {
+    color: red;
+    font-weight: bold;
+}
+
+/* Hidden scrollbar */
+.incomeStyle {
+    display: flex;
+    overflow-y: scroll;
+}
+
+.incomeStyle::-webkit-scrollbar {
+    width: 0;
+}
+
+.incomeStyle {
+    scrollbar-width: none;
+}
