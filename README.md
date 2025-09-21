@@ -1,3 +1,5 @@
+# tiny
+
 # Blissify--Wedding-Management-System
 
 SLIIT 2nd year second semester ITP module project using MERN stack technology for a wedding management system.
@@ -14,7 +16,6 @@ Micro frontend architecture was implemented to reduce complexity and scale the s
 
 <p align="center">
 <a href="https://ibb.co/JdG5BDY"><img src="https://i.ibb.co/sPNym8T/banner.png" alt="banner" border="0"></a><br /><a target='_blank' href='https://imgbb.com/'></a><br /></p>
-
 
 Contributors
 
