@@ -2,9 +2,9 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ main, tiny ]   # Scan main + tiny
+    branches: [ "*" ]
   pull_request:
-    branches: [ main, tiny ]
+    branches: [ "*" ]
   schedule:
     - cron: '0 0 * * 0'        # Weekly scan
 
