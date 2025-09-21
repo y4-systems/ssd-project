@@ -2,15 +2,15 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ main, tiny ]   # scan both main and tiny
+    branches: [ main, tiny ]   # Scan main + tiny
   pull_request:
-    branches: [ main, tiny ]   # also on PRs to these branches
+    branches: [ main, tiny ]
   schedule:
-    - cron: '0 0 * * 0'        # weekly scan
+    - cron: '0 0 * * 0'        # Weekly scan
 
 jobs:
   analyze:
-    name: Analyze
+    name: CodeQL Analysis
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -20,19 +20,27 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'javascript' ]  # adjust if you use other langs too
+        language: [ 'javascript' ]  # Scan JavaScript only
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'   # or your Node version
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Build project
+      run: npm run build --if-present
+
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
       with:
         languages: ${{ matrix.language }}
-
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
