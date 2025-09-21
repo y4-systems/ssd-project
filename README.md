@@ -1,4 +1,4 @@
-# tiny
+# tinyy
 
 # Blissify--Wedding-Management-System
 
