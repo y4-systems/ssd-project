@@ -12,23 +12,32 @@ const passport = require("passport");
 const TodoRoutes = require("./Routes/TodoRoutes");
 const NoteRoutes = require("./Routes/NoteRoutes");
 const TaskRoutes = require("./Routes/TaskRoutes");
+//new
+const rateLimit = require("express-rate-limit");
 
 const PORT = 8080;
+
+// Rate limiter for authentication routes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 requests per window
+  message: { error: "Too many attempts, please try again later." }
+});
 
 const app = express();
 app.use([
   cors({
     origin: process.env.FRONTEND_DOMAIN,
     credentials: true,
-    methods: ["GET", "PUT", "PATCH", "PUT", "DELETE"],
+    methods: ["GET", "PUT", "PATCH", "PUT", "DELETE"]
   }),
   express.json(),
-  express.urlencoded({ extended: true }),
+  express.urlencoded({ extended: true })
 ]);
 
 const sessionStore = new MongoStore({
   mongoUrl: process.env.MONGO_URL,
-  collectionName: "session",
+  collectionName: "session"
 });
 app.use(
   session({
@@ -37,8 +46,8 @@ app.use(
     saveUninitialized: true,
     store: sessionStore,
     cookie: {
-      maxAge: 1000 * 60 * 60 * 24,
-    },
+      maxAge: 1000 * 60 * 60 * 24
+    }
   })
 );
 
@@ -49,14 +58,15 @@ app.get("/", (req, res) => {
   res.json(" hello ");
 });
 
-app.post("/register", async (req, res) => {
+// Register
+app.post("/register", authLimiter, async (req, res) => {
   const { userName, email, password } = req.body;
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
   const newAuth = new authModel({
     userName: userName,
     email: email,
-    password: hashedPassword,
+    password: hashedPassword
   });
 
   try {
@@ -82,7 +92,7 @@ app.get(
   "/google/callback",
   passport.authenticate("google", {
     failureRedirect: process.env.FRONTEND_DOMAIN,
-    successRedirect: `${process.env.FRONTEND_DOMAIN}/Home`,
+    successRedirect: `${process.env.FRONTEND_DOMAIN}/Home`
   })
 );
 
@@ -94,15 +104,16 @@ app.get(
   "/facebook/callback",
   passport.authenticate("facebook", {
     failureRedirect: process.env.FRONTEND_DOMAIN,
-    successRedirect: `${process.env.FRONTEND_DOMAIN}/Home`,
+    successRedirect: `${process.env.FRONTEND_DOMAIN}/Home`
   })
 );
 
-//Local Login
+// Login
 app.post(
   "/login",
+  authLimiter,
   passport.authenticate("local", {
-    failureRedirect: process.env.FRONTEND_DOMAIN,
+    failureRedirect: process.env.FRONTEND_DOMAIN
   }),
   (req, res) => {
     res.json({ success: "successfully logged in" });
@@ -124,7 +135,8 @@ app.get("/getUser", (req, res, next) => {
 });
 
 //Forgot and reset password
-app.post("/resetPassword/:id/:token", async (req, res) => {
+// Reset Password
+app.post("/resetPassword/:id/:token", authLimiter, async (req, res) => {
   const { id, token } = req.params;
   console.log(id);
   const { newPassword } = req.body;
@@ -141,12 +153,13 @@ app.post("/resetPassword/:id/:token", async (req, res) => {
   });
 });
 
-app.post("/forgotpass", async (req, res) => {
+// Forgot Password
+app.post("/forgotpass", authLimiter, async (req, res) => {
   const { email } = req.body;
   await authModel.findOne({ email: email }).then((user) => {
     if (!user) return res.send({ Status: "Enter a valid email" });
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, {
-      expiresIn: "1d",
+      expiresIn: "1d"
     });
     var transporter = nodemailer.createTransport({
       service: "gmail",
@@ -155,15 +168,15 @@ app.post("/forgotpass", async (req, res) => {
       secure: true,
       auth: {
         user: "jhonmoorthi85131@gmail.com",
-        pass: "klxb xvje ygnr qvbo",
-      },
+        pass: "klxb xvje ygnr qvbo"
+      }
     });
 
     var mailOptions = {
       from: "jhonmoorthi85131@gmail.com",
       to: email,
       subject: "Forgot password for task manager",
-      text: `${process.env.FRONTEND_DOMAIN}/ResetPass/${user._id}/${token}`,
+      text: `${process.env.FRONTEND_DOMAIN}/ResetPass/${user._id}/${token}`
     };
 
     transporter.sendMail(mailOptions, function (error, info) {
