@@ -13,5 +13,8 @@
   "scripts": {
     "start": "lerna run start --parallel",
     "clean": "lerna clean"
+  },
+  "dependencies": {
+    "express-rate-limit": "^8.1.0"
   }
 }
