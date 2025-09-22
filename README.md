@@ -1,45 +1,27 @@
-# SSD Project — Securing the App
+# Blissify--Wedding-Management-System
 
-## Team
-- Nuwani Fonseka — OAuth (Google) + DoS (ReDoS) fix
-- Hasindu — SQL Injection, Dependency updates
-- Sadeesha — CSRF, Hardcoded URL removal
-- Tiny — Sensitive Data Exposure, (Rate Limiting moved to Tiny)
+SLIIT 2nd year second semester ITP module project using MERN stack technology for a wedding management system.
 
-## Original project
-- Source (pre-fixes): <PUT LINK>  
-  *Note:* Original commit history predates semester start. (See assignment brief.) :contentReference[oaicite:0]{index=0}
+<p align="center">
+<a href="https://ibb.co/q7HjVZs"><img src="https://i.ibb.co/5GQ4w78/Screenshot-2024-05-08-101902.png" alt="Blissify" border="0"></a>
+</p>
 
-## Secured project
-- Fork / modified code (with fixes): <PUT LINK TO YOUR REPO/BRANCH>  
-- Key branches:
-  - `main` — stable, after fixes
-  - `nuwani-Oauth` — OAuth + DoS work
+<h3>Demo Video: https://youtu.be/ZZwhkC4C63M </h3>
 
-## My vulnerabilities (Nuwani)
-1) **DoS (ReDoS) risk** in tour search  
-   - **Before:** `new RegExp(req.query.city, "i")` built from user input  
-   - **After:** Removed dynamic regex. Added input validation and **MongoDB collation** (`strength: 2`) for case-insensitive match.  
-   - **Endpoints:**  
-     - `GET /api/v1/tours/search?city=Colombo&distance=10&maxGroupSize=5`  
-     - `GET /api/v1/tours/featured`  
-     - `GET /api/v1/tours/count`
-   - **Files touched:**  
-     - `mainapp/backend/controllers/tourController.js`  
-     - `mainapp/backend/models/Tour.js` (index: `tourSchema.index({ city: 1 }, { collation: { locale: "en", strength: 2 } })`)  
-     - `mainapp/backend/routes/tour.js` (route order hardened)
+<h3>Project Architecture</h3>
 
-2) **OAuth 2.0 (Google) login**  
-   - Added OAuth flow with popup-aware route handlers; state parameter preserved; tokens handled server-side.
-   - **Files:** `eventapp/backend/server.js`, `frontend/src/pages/Login.js`, `frontend/src/pages/SsoHandler.js`, etc.
+Micro frontend architecture was implemented to reduce complexity and scale the system according to the client's requirements. With this architecture system breaks down to subdomains. In development, these subdomains run on different ports which was implemented using lerna and craco npm libraries. mainapp works as host app and other apps such as vendorapp, guestapp work as remote apps.
 
-## How to run
-```bash
-cd mainapp/backend
-cp .env.example .env
-# .env requires:
-# PORT=5003
-# MONGO_URI=mongodb+srv://<...>
+<p align="center">
+<a href="https://ibb.co/JdG5BDY"><img src="https://i.ibb.co/sPNym8T/banner.png" alt="banner" border="0"></a><br /><a target='_blank' href='https://imgbb.com/'></a><br /></p>
 
-npm install
-npm start
+Contributors
+
+1. Sadeesha : Perera RLSB
+1. Ashika : Ridimahaliyadda AK
+1. Chamika : Wijenarayana CH
+1. Janudi : Adhikari AAJT
+1. Dilsha : De Silva KDL
+1. Sunera : Weerakkody WSS
+1. Amandi : Wickramarathna ACS
+1. Nethum : Rathninda RGSNC
