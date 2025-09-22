@@ -1,38 +1,34 @@
 const express = require("express");
 const app = express();
-const port = process.env.PORT || 5000;
 const cors = require("cors");
-const rateLimit = require("express-rate-limit"); // Added
+const rateLimit = require("express-rate-limit");
+require("dotenv").config(); // 🔹 Load environment variables
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+
+const port = process.env.PORT || 5000;
 
 // ===== Rate Limiting =====
 // General limiter (all routes)
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 min
-  max: 100, // 100 requests per IP
+  max: 100,
   message: { error: "Too many requests, please try again later." }
 });
 
-// Stricter limiter for write-heavy routes (POST/PATCH/DELETE)
+// Stricter limiter for write-heavy routes
 const writeLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 min
-  max: 20, // 20 writes per IP
+  max: 20,
   message: { error: "Too many write requests, slow down." }
 });
 
 // ===== Middleware =====
 app.use(cors());
 app.use(express.json());
-app.use(apiLimiter); // ✅ Global limiter applied to all requests
-
-//pw -user123
-app.get("/", (req, res) => {
-  res.send("Hello World!");
-});
+app.use(apiLimiter); // ✅ Apply global limiter
 
 // ===== MongoDB configuration =====
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-const uri =
-  "mongodb+srv://demo-user:user123@cluster0.aobbdul.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const uri = process.env.MONGO_URI; // 🔹 No hardcoded credentials
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -52,7 +48,6 @@ async function run() {
 
     // Insert a package
     app.post("/upload-Package", writeLimiter, async (req, res) => {
-      // Protected
       const data = req.body;
       const result = await Packagecollection.insertOne(data);
       res.send(result);
@@ -67,7 +62,6 @@ async function run() {
 
     // Update a package
     app.patch("/Package/:id", writeLimiter, async (req, res) => {
-      // Protected
       const id = req.params.id;
       const updatePackageData = req.body;
       const filter = { _id: new ObjectId(id) };
@@ -83,7 +77,6 @@ async function run() {
 
     // Delete package
     app.delete("/Package/:id", writeLimiter, async (req, res) => {
-      // Protected
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const result = await Packagecollection.deleteOne(filter);
@@ -99,9 +92,7 @@ async function run() {
     });
 
     await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    console.log("✅ MongoDB connection successful!");
   } finally {
     // keep client open
   }
