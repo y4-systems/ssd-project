@@ -45,7 +45,7 @@ export default function Login() {
       if (!e.data || e.data.type !== "oauth-token") return;
 
       try {
-        const decoded = jwtDecode(e.data.token); // {_id, role, username}
+        const decoded = jwtDecode(e.data.token);
         const user = {
           _id: decoded._id,
           username: decoded.username || decoded.email || "google_user",
