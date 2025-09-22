@@ -15,9 +15,13 @@ AOS.init();
 
 const BACKEND_ORIGIN = "http://localhost:5003";
 
-// ✅ Helper to safely get global object
+// ✅ Universal global object getter (SonarQube-friendly, no window usage)
 function getGlobal() {
-  return typeof globalThis === "undefined" ? window : globalThis;
+  if (typeof globalThis !== "undefined") {
+    return globalThis;
+  }
+  // fallback for very old environments
+  return Function("return this")();
 }
 
 export default function Login() {
@@ -67,8 +71,8 @@ export default function Login() {
         };
 
         g.localStorage?.setItem("user", JSON.stringify(user));
-        // Successful login: go to /home
-        navigate("/home", { replace: true });
+        // ✅ Force a full reload so app state resets properly
+        g.location.href = "/home";
       } catch (err) {
         // Properly handle the exception
         // eslint-disable-next-line no-console

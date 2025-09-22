@@ -1,6 +1,12 @@
+/* global globalThis */
 import React, { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+
+// ✅ Helper for safe global object
+function getGlobal() {
+  return typeof globalThis === "undefined" ? window : globalThis;
+}
 
 const SsoHandler = () => {
   const [params] = useSearchParams();
@@ -22,11 +28,13 @@ const SsoHandler = () => {
         username: decoded.username || decoded.email || "google_user",
         role: "User",
       };
-      localStorage.setItem("user", JSON.stringify(user));
+
+      const g = getGlobal();
+      g.localStorage.setItem("user", JSON.stringify(user));
       console.log("[SSO] user stored, redirecting to /home", user);
 
-      // Force a full reload so App remounts and switches route sets
-      window.location.replace("/home");
+      // ✅ Use globalThis (fallback to window only if needed)
+      g.location.replace("/home");
     } catch (e) {
       console.error("[SSO] jwt decode failed", e);
       navigate("/login", { replace: true });
