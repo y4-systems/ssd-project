@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import lusca from "lusca";
 import tourRoute from "./routes/tour.js";
 import userRoute from "./routes/user.js";
 import authRoute from "./routes/auth.js";
@@ -35,9 +36,19 @@ const connect = async () => {
 //     res.send("api is working");
 // });
 
+
 mainapp1.use(express.json());
 mainapp1.use(cors(corsOptions));
 mainapp1.use(cookieParser());
+
+// CSRF protection middleware (must be after cookieParser and before routes)
+mainapp1.use(lusca.csrf());
+
+// Expose CSRF token for API clients
+mainapp1.get("/csrf-token", (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
+
 mainapp1.use("/api/v1/auth", authRoute);
 mainapp1.use("/api/v1/tours", tourRoute);
 mainapp1.use("/api/v1/users", userRoute);
