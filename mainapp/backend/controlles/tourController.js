@@ -72,14 +72,16 @@ export const getSingleTour = async (req, res) => {
 
 //getAllTour
 export const getAllTour = async (req, res) => {
-  //for pagination
-  const page = parseInt(req.query.page);
+  // for pagination
+  const page = Number.parseInt(req.query.page, 10) || 0; // ✅ explicit base 10, safe fallback
   console.log(page);
+
   try {
     const tours = await Tour.find({})
       .populate("reviews")
       .skip(page * 8)
       .limit(8);
+
     res.status(200).json({
       success: true,
       count: tours.length,
@@ -90,6 +92,7 @@ export const getAllTour = async (req, res) => {
     res.status(404).json({ success: false, message: "Not found" });
   }
 };
+
 
 //get tour by search
 // get tour by search (safe: no regex)
