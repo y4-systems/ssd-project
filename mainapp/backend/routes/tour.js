@@ -30,11 +30,6 @@ const readLimiter = rateLimit({
 });
 
 /**
- * ✅ Fix: Rate limiter BEFORE verifyAdmin
- * This ensures CodeQL won’t complain about missing rate limiting.
- */
-
-/**
  * Public search & info endpoints
  * Put specific routes BEFORE any param route like "/:id"
  */
