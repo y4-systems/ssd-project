@@ -28,10 +28,15 @@ const readLimiter = rateLimit({
   message: { error: "Too many requests, please try again later." }
 });
 
+/**
+ * ✅ Fix: Rate limiter BEFORE verifyAdmin
+ * This ensures CodeQL won’t complain about missing rate limiting.
+ */
+
 // Create / update / delete tours (admin only)
-router.post("/", verifyAdmin, adminLimiter, createTour);
-router.put("/:id", verifyAdmin, adminLimiter, updateTour);
-router.delete("/:id", verifyAdmin, adminLimiter, deleteTour);
+router.post("/", adminLimiter, verifyAdmin, createTour);
+router.put("/:id", adminLimiter, verifyAdmin, updateTour);
+router.delete("/:id", adminLimiter, verifyAdmin, deleteTour);
 
 // Public read routes (rate-limited)
 router.get("/:id", readLimiter, getSingleTour);

@@ -24,10 +24,14 @@ const sensitiveLimiter = rateLimit({
   message: { error: "Too many attempts, please try again later." }
 });
 
+/**
+ * ✅ Fix: Apply limiter BEFORE verifyUser/verifyAdmin
+ */
+
 // Routes
-router.put("/:id", verifyUser, sensitiveLimiter, updateUser);
-router.delete("/:id", verifyUser, sensitiveLimiter, deleteUser);
-router.get("/:id", verifyUser, userLimiter, getSingleUser);
-router.get("/", verifyAdmin, userLimiter, getAllUser);
+router.put("/:id", sensitiveLimiter, verifyUser, updateUser);
+router.delete("/:id", sensitiveLimiter, verifyUser, deleteUser);
+router.get("/:id", userLimiter, verifyUser, getSingleUser);
+router.get("/", userLimiter, verifyAdmin, getAllUser);
 
 export default router;

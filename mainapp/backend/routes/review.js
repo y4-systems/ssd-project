@@ -12,6 +12,7 @@ const reviewLimiter = rateLimit({
   message: { error: "Too many review attempts, please try again later." }
 });
 
-router.post("/:tourId", verifyUser, reviewLimiter, createReview);
+//Rate limiter comes BEFORE verifyUser → fixes CodeQL warning
+router.post("/:tourId", reviewLimiter, verifyUser, createReview);
 
 export default router;
