@@ -1,3 +1,4 @@
+// mainapp/backend/routes/tour.js
 import express from "express";
 import rateLimit from "express-rate-limit";
 import {
@@ -9,7 +10,7 @@ import {
   getTourBysearch,
   getFeaturedTour,
   getTourCount
-} from "./../controlles/tourController.js";
+} from "./../controllers/tourController.js";
 import { verifyAdmin } from "../utils/verifyToken.js";
 
 const router = express.Router();
@@ -33,16 +34,25 @@ const readLimiter = rateLimit({
  * This ensures CodeQL won’t complain about missing rate limiting.
  */
 
-// Create / update / delete tours (admin only)
+/**
+ * Public search & info endpoints
+ * Put specific routes BEFORE any param route like "/:id"
+ */
+router.get("/search", readLimiter, getTourBysearch);
+router.get("/featured", readLimiter, getFeaturedTour);
+router.get("/count", readLimiter, getTourCount);
+
+/**
+ * CRUD endpoints (admin-protected with stricter rate limiting)
+ */
 router.post("/", adminLimiter, verifyAdmin, createTour);
 router.put("/:id", adminLimiter, verifyAdmin, updateTour);
 router.delete("/:id", adminLimiter, verifyAdmin, deleteTour);
 
-// Public read routes (rate-limited)
+/**
+ * Param route AFTER specific routes so it won't swallow /search /featured /count
+ */
 router.get("/:id", readLimiter, getSingleTour);
 router.get("/", readLimiter, getAllTour);
-router.get("/search/getTourBySearch", readLimiter, getTourBysearch);
-router.get("/search/getFeaturedTours", readLimiter, getFeaturedTour);
-router.get("/search/getTourCount", readLimiter, getTourCount);
 
 export default router;
