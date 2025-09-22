@@ -9,7 +9,7 @@ function getGlobal() {
   if (typeof globalThis !== "undefined") {
     return globalThis;
   }
-  return new Function("return this")(); // fallback
+  return new Function("return this")();
 }
 
 const SsoHandler = () => {
@@ -25,7 +25,7 @@ const SsoHandler = () => {
     }
 
     try {
-      const decoded = jwtDecode(token); // {_id, role?, username}
+      const decoded = jwtDecode(token);
       const user = {
         _id: decoded._id,
         username: decoded.username || decoded.email || "google_user",
@@ -36,7 +36,7 @@ const SsoHandler = () => {
       g.localStorage.setItem("user", JSON.stringify(user));
       console.log("[SSO] user stored, redirecting to /home", user);
 
-      // ✅ Hard reload so App state remounts and picks up the user
+      // ✅ Hard reload ensures app picks up the new user
       g.location.href = "/home";
     } catch (e) {
       console.error("[SSO] jwt decode failed", e);

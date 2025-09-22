@@ -21,7 +21,7 @@ function getGlobal() {
     return globalThis;
   }
   // fallback for very old environments
-  return Function("return this")();
+  return new Function("return this")();
 }
 
 export default function Login() {
@@ -71,15 +71,13 @@ export default function Login() {
         };
 
         g.localStorage?.setItem("user", JSON.stringify(user));
-        // ✅ Force a full reload so app state resets properly
+        // ✅ Force full reload so app picks up new user
         g.location.href = "/home";
       } catch (err) {
-        // Properly handle the exception
         // eslint-disable-next-line no-console
         console.error("Google OAuth message handling failed:", err);
         navigate("/login", { replace: true });
       } finally {
-        // Always clean up listeners and popup
         g.removeEventListener("message", onMessage);
         if (popup && !popup.closed) popup.close();
       }
@@ -124,7 +122,6 @@ export default function Login() {
               <Input type="password" />
             </Form.Item>
 
-            {/* Submit credentials */}
             <button
               type="submit"
               style={{
@@ -140,7 +137,6 @@ export default function Login() {
               Login
             </button>
 
-            {/* Google popup option */}
             <button
               type="button"
               onClick={signInWithGooglePopup}
