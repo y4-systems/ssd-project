@@ -15,6 +15,11 @@ AOS.init();
 
 const BACKEND_ORIGIN = "http://localhost:5003";
 
+// ✅ Helper to safely get global object
+function getGlobal() {
+  return typeof globalThis === "undefined" ? window : globalThis;
+}
+
 export default function Login() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -22,7 +27,7 @@ export default function Login() {
 
   // If already logged in, go straight to /home
   useEffect(() => {
-    const g = typeof globalThis !== "undefined" ? globalThis : window;
+    const g = getGlobal();
     const u = g.localStorage?.getItem("user");
     if (u) navigate("/home", { replace: true });
   }, [navigate]);
@@ -33,7 +38,7 @@ export default function Login() {
 
   // --- Google popup sign-in flow ---
   const signInWithGooglePopup = () => {
-    const g = typeof globalThis !== "undefined" ? globalThis : window;
+    const g = getGlobal();
 
     const w = 520;
     const h = 600;
@@ -64,10 +69,8 @@ export default function Login() {
         g.localStorage?.setItem("user", JSON.stringify(user));
         // Successful login: go to /home
         navigate("/home", { replace: true });
-        return;
       } catch (err) {
-        // Properly handle the exception (S2486): log and recover
-        // (keeps current behavior by sending user to /login)
+        // Properly handle the exception
         // eslint-disable-next-line no-console
         console.error("Google OAuth message handling failed:", err);
         navigate("/login", { replace: true });
