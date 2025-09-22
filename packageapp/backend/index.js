@@ -1,111 +1,113 @@
-const express = require('express')
-const app = express()
+const express = require("express");
+const app = express();
 const port = process.env.PORT || 5000;
-const cors = require('cors')
+const cors = require("cors");
+const rateLimit = require("express-rate-limit"); // Added
 
-//middleware
+// ===== Rate Limiting =====
+// General limiter (all routes)
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 min
+  max: 100, // 100 requests per IP
+  message: { error: "Too many requests, please try again later." }
+});
+
+// Stricter limiter for write-heavy routes (POST/PATCH/DELETE)
+const writeLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 min
+  max: 20, // 20 writes per IP
+  message: { error: "Too many write requests, slow down." }
+});
+
+// ===== Middleware =====
 app.use(cors());
 app.use(express.json());
-
+app.use(apiLimiter); // ✅ Global limiter applied to all requests
 
 //pw -user123
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
 
-app.get('/', (req, res) => {
-  res.send('Hello World!')
-})
+// ===== MongoDB configuration =====
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const uri =
+  "mongodb+srv://demo-user:user123@cluster0.aobbdul.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
-//mongodb configuration
-
-
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const uri = "mongodb+srv://demo-user:user123@cluster0.aobbdul.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
     strict: true,
-    deprecationErrors: true,
+    deprecationErrors: true
   }
 });
 
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
-    //create a collection of documents
-    const Packagecollection = await client.db("PackageInventory").collection("Packages");
+    const Packagecollection = await client
+      .db("PackageInventory")
+      .collection("Packages");
 
-
-    //insert a package to the database post method
-
-    app.post("/upload-Package",async(req,res) => { 
-        const data = req.body;
-        const result = await Packagecollection.insertOne(data);
-        res.send(result);
+    // Insert a package
+    app.post("/upload-Package", writeLimiter, async (req, res) => {
+      // Protected
+      const data = req.body;
+      const result = await Packagecollection.insertOne(data);
+      res.send(result);
     });
 
+    // Get all packages
+    app.get("/all-Packages", async (req, res) => {
+      const packages = Packagecollection.find();
+      const result = await packages.toArray();
+      res.send(result);
+    });
 
-    //get all data from the database
-
-    app.get("/all-Packages",async(reg,res)=>{
-        const packages =  Packagecollection.find();
-        const result = await packages.toArray();
-        res.send(result);
-    })
-
-
-    //update a package data : patch or update methods
-
-    app.patch("/Package/:id",async(req,res) => {
-        const id = req.params.id;
-        //console.log(id);
-        const updatePackageData = req.body;
-        const filter = {_id: new ObjectId(id)};
-        const options = {upsert: true};
-        const updateDoc ={
-            $set: {
-                ...updatePackageData
-            }
-        }
-
-        //update
-        const result = await Packagecollection.updateOne(filter,updateDoc,options );
-        res.send(result); 
-    })
-
-
-    //delete package data
-
-    app.delete("/Package/:id",async(req,res) => {
-        const id = req.params.id;
-        const filter = {_id: new ObjectId(id)};
-        const result = await Packagecollection.deleteOne(filter);
-        res.send(result);
-    })
-
-    //To get single package data
-
-    app.get("/package/:id", async(req,res) => {
+    // Update a package
+    app.patch("/Package/:id", writeLimiter, async (req, res) => {
+      // Protected
       const id = req.params.id;
-      const filter = {_id:new ObjectId(id)};
+      const updatePackageData = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = { $set: { ...updatePackageData } };
+      const result = await Packagecollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.send(result);
+    });
+
+    // Delete package
+    app.delete("/Package/:id", writeLimiter, async (req, res) => {
+      // Protected
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const result = await Packagecollection.deleteOne(filter);
+      res.send(result);
+    });
+
+    // Get single package
+    app.get("/package/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
       const result = await Packagecollection.findOne(filter);
       res.send(result);
-    })
-
-   // Send a ping to confirm a successful connection
+    });
 
     await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    console.log(
+      "Pinged your deployment. You successfully connected to MongoDB!"
+    );
   } finally {
-    // Ensures that the client will close when you finish/error
-    //await client.close();
+    // keep client open
   }
 }
 run().catch(console.dir);
 
-
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
-})
+  console.log(`Example app listening on port ${port}`);
+});
