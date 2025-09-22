@@ -27,7 +27,7 @@ app.use(
   })
 );
 
-// Sessions (dev settings; set secure:true when behind HTTPS)
+// Sessions (secure: true in production with HTTPS)
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
@@ -36,7 +36,7 @@ app.use(
     cookie: {
       httpOnly: true,
       sameSite: "lax",
-      secure: false, // set true when serving over HTTPS
+      secure: process.env.NODE_ENV === "production", // 🔒 true in prod
     },
   })
 );
@@ -71,10 +71,10 @@ passport.use(
 
         let user = await User.findOne({ username: email });
         if (!user) {
-          // default role "User" for first-time Google login
+          // ✅ Remove hardcoded password (store null instead)
           user = await User.create({
             username: email,
-            password: "(oauth)", // not used
+            password: null, // no password for OAuth-only accounts
             role: "User",
           });
         }
@@ -87,8 +87,6 @@ passport.use(
 );
 
 // --- OAuth routes (popup-aware) ---
-
-// Start OAuth. If called with ?popup=1, we embed state=popup.
 app.get("/auth/google", (req, res, next) => {
   const isPopup = req.query.popup === "1";
   passport.authenticate("google", {
@@ -105,7 +103,6 @@ app.get(
     failureRedirect: `${process.env.FRONTEND_URL}/login?err=oauth`,
   }),
   (req, res) => {
-    // Issue short-lived JWT and hand off to frontend
     const payload = {
       _id: req.user._id,
       role: req.user.role,
@@ -118,7 +115,6 @@ app.get(
     const isPopup = (req.query.state || "") === "popup";
 
     if (isPopup) {
-      // Return token to the opener window and close popup
       res.send(`<!doctype html>
 <html><body><script>
   (function () {
@@ -132,7 +128,6 @@ app.get(
       return;
     }
 
-    // Fallback: classic redirect flow
     res.redirect(
       `${process.env.FRONTEND_URL}/login/sso?token=${encodeURIComponent(token)}`
     );
