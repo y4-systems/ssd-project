@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import csurf from "csurf";
 import tourRoute from "./routes/tour.js";
 import userRoute from "./routes/user.js";
 import authRoute from "./routes/auth.js";
@@ -38,6 +39,7 @@ const connect = async () => {
 mainapp1.use(express.json());
 mainapp1.use(cors(corsOptions));
 mainapp1.use(cookieParser());
+mainapp1.use(csurf({ cookie: true }));
 mainapp1.use("/api/v1/auth", authRoute);
 mainapp1.use("/api/v1/tours", tourRoute);
 mainapp1.use("/api/v1/users", userRoute);
