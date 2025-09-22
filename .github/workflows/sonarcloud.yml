@@ -2,7 +2,7 @@ name: SonarCloud
 
 on:
   push:
-    branches: ["**"]             
+    branches: ["**"]
   pull_request:
     types: [opened, synchronize, reopened]
 
@@ -12,16 +12,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0          # needed for blame/PR analysis
+          fetch-depth: 0
+
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-      - run: npm ci --ignore-scripts || true  # install deps (adjust to your repo)
+
+      - run: npm ci --ignore-scripts || true
+
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v2
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # If your code is in a subfolder, set projectBaseDir:
+          SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}
         with:
-          projectBaseDir: mainapp/backend  
+          projectBaseDir: mainapp/backend
+          args: >
+            -Dsonar.projectKey=y4-systems_ssd-project
+            -Dsonar.organization=y4-systems
