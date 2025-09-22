@@ -9,20 +9,23 @@ import { verifyAdmin, verifyUser } from "../utils/verifyToken.js";
 
 const router = express.Router();
 
-// Rate limiter for bookings (stricter, since these are sensitive operations)
+// Booking limiter (strict)
 const bookingLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // limit to 10 booking requests per IP
+  windowMs: 15 * 60 * 1000,
+  max: 10,
   message: { error: "Too many booking attempts, please try again later." }
 });
 
-// Create a booking (user action)
+// Public GET limiter (for database reads)
+const readLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: "Too many requests, please try again later." }
+});
+
+// Routes
 router.post("/", verifyUser, bookingLimiter, createBooking);
-
-// Get bookings (user sees their own bookings)
-router.get("/", verifyUser, bookingLimiter, getBooking);
-
-// Admin gets all bookings
-router.get("/all", verifyAdmin, bookingLimiter, getAllBooking);
+router.get("/", verifyUser, readLimiter, getBooking); // user’s own bookings
+router.get("/all", verifyAdmin, readLimiter, getAllBooking); // admin all bookings
 
 export default router;

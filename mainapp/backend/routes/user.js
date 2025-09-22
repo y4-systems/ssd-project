@@ -10,30 +10,24 @@ import { verifyAdmin, verifyUser } from "../utils/verifyToken.js";
 
 const router = express.Router();
 
-// General limiter for user actions
+// General limiter
 const userLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
   message: { error: "Too many requests, please slow down." }
 });
 
-// Stricter limiter for sensitive actions (update/delete)
+// Stricter limiter for sensitive ops
 const sensitiveLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
   message: { error: "Too many attempts, please try again later." }
 });
 
-// Update User
+// Routes
 router.put("/:id", verifyUser, sensitiveLimiter, updateUser);
-
-// Delete User
 router.delete("/:id", verifyUser, sensitiveLimiter, deleteUser);
-
-// Get Single User
 router.get("/:id", verifyUser, userLimiter, getSingleUser);
-
-// Get All Users (admin only, also rate-limited)
 router.get("/", verifyAdmin, userLimiter, getAllUser);
 
 export default router;

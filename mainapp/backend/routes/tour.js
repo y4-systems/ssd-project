@@ -14,27 +14,30 @@ import { verifyAdmin } from "../utils/verifyToken.js";
 
 const router = express.Router();
 
-// Rate limiter for admin-modifying routes (POST/PUT/DELETE)
+// Admin limiter (strict)
 const adminLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // allow 20 requests per IP
+  windowMs: 15 * 60 * 1000,
+  max: 20,
   message: { error: "Too many admin requests, please try again later." }
 });
 
-//create new tour
+// Public GET limiter (generous)
+const readLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: "Too many requests, please try again later." }
+});
+
+// Create / update / delete tours (admin only)
 router.post("/", verifyAdmin, adminLimiter, createTour);
-
-//update tour
 router.put("/:id", verifyAdmin, adminLimiter, updateTour);
-
-//delete tour
 router.delete("/:id", verifyAdmin, adminLimiter, deleteTour);
 
-// Public routes (kept unthrottled or you can add a general limiter if needed)
-router.get("/:id", getSingleTour);
-router.get("/", getAllTour);
-router.get("/search/getTourBySearch", getTourBysearch);
-router.get("/search/getFeaturedTours", getFeaturedTour);
-router.get("/search/getTourCount", getTourCount);
+// Public read routes (rate-limited)
+router.get("/:id", readLimiter, getSingleTour);
+router.get("/", readLimiter, getAllTour);
+router.get("/search/getTourBySearch", readLimiter, getTourBysearch);
+router.get("/search/getFeaturedTours", readLimiter, getFeaturedTour);
+router.get("/search/getTourCount", readLimiter, getTourCount);
 
 export default router;
