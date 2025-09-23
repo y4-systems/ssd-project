@@ -1,6 +1,10 @@
 const mongoose = require("mongoose");
+const validator = require("validator");
 const Service = require("../models/serviceSchema");
 const Couple = require("../models/coupleSchema");
+
+// Escape regex to prevent ReDoS and injection
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 // ======================== CREATE ========================
 const serviceCreate = async (req, res) => {
@@ -49,7 +53,7 @@ const getServiceDetail = async (req, res) => {
       .populate({
         path: "reviews.reviewer",
         model: "couple",
-        select: "name",
+        select: "name"
       });
 
     res.send(service ? service : { message: "No service found" });
@@ -96,7 +100,7 @@ const addReview = async (req, res) => {
 
     if (existingReview) {
       return res.send({
-        message: "You have already submitted a review for this service.",
+        message: "You have already submitted a review for this service."
       });
     }
 
@@ -104,7 +108,7 @@ const addReview = async (req, res) => {
       rating,
       comment,
       reviewer,
-      date: new Date(),
+      date: new Date()
     });
 
     const updatedService = await service.save();
@@ -118,13 +122,22 @@ const addReview = async (req, res) => {
 const searchService = async (req, res) => {
   try {
     const key = req.params.key;
+
+    if (!key || key.length > 100) {
+      return res.status(400).json({ error: "Invalid search key" });
+    }
+
+    const safeKey = escapeRegex(validator.escape(key.trim()));
+
     const services = await Service.find({
       $or: [
-        { serviceName: { $regex: key, $options: "i" } },
-        { category: { $regex: key, $options: "i" } },
-        { subcategory: { $regex: key, $options: "i" } },
-      ],
-    }).populate("vendor", "shopName");
+        { serviceName: { $regex: safeKey, $options: "i" } },
+        { category: { $regex: safeKey, $options: "i" } },
+        { subcategory: { $regex: safeKey, $options: "i" } }
+      ]
+    })
+      .populate("vendor", "shopName")
+      .limit(50);
 
     res.send(services.length > 0 ? services : { message: "No services found" });
   } catch (err) {
@@ -135,9 +148,18 @@ const searchService = async (req, res) => {
 const searchServicebyCategory = async (req, res) => {
   try {
     const key = req.params.key;
+
+    if (!key || key.length > 100) {
+      return res.status(400).json({ error: "Invalid search key" });
+    }
+
+    const safeKey = escapeRegex(validator.escape(key.trim()));
+
     const services = await Service.find({
-      category: { $regex: key, $options: "i" },
-    }).populate("vendor", "shopName");
+      category: { $regex: safeKey, $options: "i" }
+    })
+      .populate("vendor", "shopName")
+      .limit(50);
 
     res.send(services.length > 0 ? services : { message: "No services found" });
   } catch (err) {
@@ -148,9 +170,18 @@ const searchServicebyCategory = async (req, res) => {
 const searchServicebySubCategory = async (req, res) => {
   try {
     const key = req.params.key;
+
+    if (!key || key.length > 100) {
+      return res.status(400).json({ error: "Invalid search key" });
+    }
+
+    const safeKey = escapeRegex(validator.escape(key.trim()));
+
     const services = await Service.find({
-      subcategory: { $regex: key, $options: "i" },
-    }).populate("vendor", "shopName");
+      subcategory: { $regex: safeKey, $options: "i" }
+    })
+      .populate("vendor", "shopName")
+      .limit(50);
 
     res.send(services.length > 0 ? services : { message: "No services found" });
   } catch (err) {
@@ -174,7 +205,9 @@ const deleteService = async (req, res) => {
       );
     }
 
-    res.send(deletedService ? deletedService : { message: "Service not found" });
+    res.send(
+      deletedService ? deletedService : { message: "Service not found" }
+    );
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -192,16 +225,6 @@ const deleteServices = async (req, res) => {
     if (!deletionResult.deletedCount) {
       return res.json({ message: "No services found to delete" });
     }
-
-    const deletedServices = await Service.find({ vendor: vendorId });
-    await Couple.updateMany(
-      { "invoiceDetails._id": { $in: deletedServices.map((s) => s._id) } },
-      {
-        $pull: {
-          invoiceDetails: { _id: { $in: deletedServices.map((s) => s._id) } },
-        },
-      }
-    );
 
     res.send(deletionResult);
   } catch (error) {
@@ -257,7 +280,7 @@ const getInterestedCouples = async (req, res) => {
 
     const serviceId = new mongoose.Types.ObjectId(req.params.id);
     const interestedCouples = await Couple.find({
-      "invoiceDetails._id": serviceId,
+      "invoiceDetails._id": serviceId
     });
 
     const coupleDetails = interestedCouples
@@ -269,7 +292,7 @@ const getInterestedCouples = async (req, res) => {
           ? {
               coupleName: couple.name,
               coupleID: couple._id,
-              quantity: invoiceItem.quantity,
+              quantity: invoiceItem.quantity
             }
           : null;
       })
@@ -294,7 +317,7 @@ const getAddedToInvoiceServices = async (req, res) => {
     const vendorId = new mongoose.Types.ObjectId(req.params.id);
 
     const couplesWithVendorService = await Couple.find({
-      "invoiceDetails.vendor": vendorId,
+      "invoiceDetails.vendor": vendorId
     });
 
     const serviceMap = new Map();
@@ -310,7 +333,7 @@ const getAddedToInvoiceServices = async (req, res) => {
               quantity: invoiceItem.quantity,
               category: invoiceItem.category,
               subcategory: invoiceItem.subcategory,
-              serviceID: serviceId,
+              serviceID: serviceId
             });
           }
         }
@@ -322,7 +345,7 @@ const getAddedToInvoiceServices = async (req, res) => {
         ? Array.from(serviceMap.values())
         : {
             message:
-              "No services from this vendor are added to invoice by couples.",
+              "No services from this vendor are added to invoice by couples."
           }
     );
   } catch (error) {
@@ -346,5 +369,5 @@ module.exports = {
   deleteServiceReview,
   deleteAllServiceReviews,
   getInterestedCouples,
-  getAddedToInvoiceServices,
+  getAddedToInvoiceServices
 };
