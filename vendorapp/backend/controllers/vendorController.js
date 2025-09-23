@@ -16,7 +16,7 @@ const vendorRegister = async (req, res) => {
         .json({ message: "Email, shop name and password are required" });
     }
 
-    // Replace regex with validator.js (no ReDoS risk)
+    // Validate email format (no regex → prevents ReDoS)
     if (!validator.isEmail(email)) {
       return res.status(400).json({ message: "Invalid email format" });
     }
@@ -37,15 +37,26 @@ const vendorRegister = async (req, res) => {
     const normalizedEmail = validator.normalizeEmail(email);
     const cleanShopName = validator.escape(shopName.trim());
 
-    // Safe queries
-    const existingVendorByEmail = await Vendor.findOne({
-      email: normalizedEmail
-    });
+    if (
+      typeof normalizedEmail !== "string" ||
+      typeof cleanShopName !== "string"
+    ) {
+      return res.status(400).json({ message: "Invalid input type" });
+    }
+
+    // ✅ Safer queries using .where().equals()
+    const existingVendorByEmail = await Vendor.findOne()
+      .where("email")
+      .equals(normalizedEmail);
+
     if (existingVendorByEmail) {
       return res.status(400).json({ message: "Email already exists" });
     }
 
-    const existingShop = await Vendor.findOne({ shopName: cleanShopName });
+    const existingShop = await Vendor.findOne()
+      .where("shopName")
+      .equals(cleanShopName);
+
     if (existingShop) {
       return res.status(400).json({ message: "Shop name already exists" });
     }
@@ -91,8 +102,15 @@ const vendorLogIn = async (req, res) => {
 
     const normalizedEmail = validator.normalizeEmail(email);
 
-    // Safe query
-    const vendor = await Vendor.findOne({ email: normalizedEmail });
+    if (typeof normalizedEmail !== "string") {
+      return res.status(400).json({ message: "Invalid input type" });
+    }
+
+    // ✅ Safe query
+    const vendor = await Vendor.findOne()
+      .where("email")
+      .equals(normalizedEmail);
+
     if (!vendor) {
       return res.status(404).json({ message: "User not found" });
     }
