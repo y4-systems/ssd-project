@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const mongoose = require("mongoose");
+const validator = require("validator"); // safer email validation
 const Couple = require("../models/coupleSchema.js");
 const { createNewToken } = require("../utils/token.js");
 
@@ -15,7 +16,8 @@ const coupleRegister = async (req, res) => {
         .json({ message: "Email, password and name are required" });
     }
 
-    if (!/^\S+@\S+\.\S+$/.test(email)) {
+    // Use validator.js instead of regex
+    if (!validator.isEmail(email)) {
       return res.status(400).json({ message: "Invalid email format" });
     }
 
@@ -25,8 +27,11 @@ const coupleRegister = async (req, res) => {
         .json({ message: "Password must be at least 6 characters long" });
     }
 
-    // Check for existing user
-    const existingCouple = await Couple.findOne({ email });
+    // Sanitize email (lowercase + trim to avoid duplicates)
+    const normalizedEmail = validator.normalizeEmail(email);
+
+    // Safe query: explicitly validated email
+    const existingCouple = await Couple.findOne({ email: normalizedEmail });
     if (existingCouple) {
       return res.status(400).json({ message: "Email already exists" });
     }
@@ -37,8 +42,8 @@ const coupleRegister = async (req, res) => {
 
     // Save new couple
     const couple = new Couple({
-      email,
-      name,
+      email: normalizedEmail,
+      name: validator.escape(name), // sanitize name to prevent injection in case it's shown in UI
       password: hashedPass
     });
 
@@ -65,7 +70,14 @@ const coupleLogIn = async (req, res) => {
         .json({ message: "Email and password are required" });
     }
 
-    const couple = await Couple.findOne({ email });
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+
+    const normalizedEmail = validator.normalizeEmail(email);
+
+    // Safe query
+    const couple = await Couple.findOne({ email: normalizedEmail });
     if (!couple) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -90,6 +102,7 @@ const getInvoiceDetail = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Prevent NoSQL injection with ObjectId check
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid ID format" });
     }
@@ -115,9 +128,15 @@ const invoiceUpdate = async (req, res) => {
       return res.status(400).json({ message: "Invalid ID format" });
     }
 
+    // Only allow updating invoiceDetails explicitly
+    const updateData = {};
+    if (req.body.invoiceDetails) {
+      updateData.invoiceDetails = req.body.invoiceDetails;
+    }
+
     const couple = await Couple.findByIdAndUpdate(
       id,
-      { $set: req.body }, // prevents direct injection
+      { $set: updateData },
       { new: true, runValidators: true }
     );
 

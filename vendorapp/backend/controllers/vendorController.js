@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const mongoose = require("mongoose");
+const validator = require("validator"); // safer validation library
 const Vendor = require("../models/vendorSchema.js");
 const { createNewToken } = require("../utils/token.js");
 
@@ -15,35 +16,48 @@ const vendorRegister = async (req, res) => {
         .json({ message: "Email, shop name and password are required" });
     }
 
-    if (!/^\S+@\S+\.\S+$/.test(email)) {
+    // Replace regex with validator.js (no ReDoS risk)
+    if (!validator.isEmail(email)) {
       return res.status(400).json({ message: "Invalid email format" });
     }
 
-    if (typeof shopName !== "string" || shopName.length < 3) {
+    if (typeof shopName !== "string" || shopName.trim().length < 3) {
       return res
         .status(400)
         .json({ message: "Shop name must be at least 3 characters long" });
+    }
+
+    if (password.length < 6) {
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 6 characters long" });
+    }
+
+    // Sanitize inputs
+    const normalizedEmail = validator.normalizeEmail(email);
+    const cleanShopName = validator.escape(shopName.trim());
+
+    // Safe queries
+    const existingVendorByEmail = await Vendor.findOne({
+      email: normalizedEmail
+    });
+    if (existingVendorByEmail) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
+
+    const existingShop = await Vendor.findOne({ shopName: cleanShopName });
+    if (existingShop) {
+      return res.status(400).json({ message: "Shop name already exists" });
     }
 
     // Hash password securely
     const salt = await bcrypt.genSalt(10);
     const hashedPass = await bcrypt.hash(password, salt);
 
-    // Safe queries
-    const existingVendorByEmail = await Vendor.findOne({ email });
-    if (existingVendorByEmail) {
-      return res.status(400).json({ message: "Email already exists" });
-    }
-
-    const existingShop = await Vendor.findOne({ shopName });
-    if (existingShop) {
-      return res.status(400).json({ message: "Shop name already exists" });
-    }
-
     // Save new vendor
     const vendor = new Vendor({
-      email,
-      shopName,
+      email: normalizedEmail,
+      shopName: cleanShopName,
       password: hashedPass
     });
 
@@ -71,7 +85,14 @@ const vendorLogIn = async (req, res) => {
         .json({ message: "Email and password are required" });
     }
 
-    const vendor = await Vendor.findOne({ email });
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+
+    const normalizedEmail = validator.normalizeEmail(email);
+
+    // Safe query
+    const vendor = await Vendor.findOne({ email: normalizedEmail });
     if (!vendor) {
       return res.status(404).json({ message: "User not found" });
     }
