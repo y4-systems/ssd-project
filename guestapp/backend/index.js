@@ -13,8 +13,40 @@ dotenv.config();
 // app.use(bodyParser.json({ limit: '10mb', extended: true }))
 // app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }))
 
-app.use(express.json({ limit: "10mb" }));
-app.use(cors());
+// Security middleware
+const {
+  preventNoSQLInjection,
+  createRateLimit,
+  securityHeaders,
+} = require("../../middleware/security.js");
+const helmet = require("helmet");
+
+// Security headers
+app.use(helmet());
+app.use(securityHeaders);
+
+// Rate limiting
+app.use(createRateLimit());
+
+// Body parsing with security limits
+app.use(express.json({ limit: "5mb" }));
+
+// NoSQL injection prevention
+app.use(preventNoSQLInjection());
+
+// CORS configuration with specific origins
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:3003",
+    ],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 mongoose
   .connect(process.env.MONGO_URL, {

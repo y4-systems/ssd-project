@@ -29,11 +29,10 @@ app.get("/", (req, res) => {
 
 //mongodb configuration
 
-const dotenv = require('dotenv');
+const dotenv = require("dotenv");
 dotenv.config();
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = process.env.MONGO_URI;
-
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -94,26 +93,55 @@ async function run() {
 
     //update a package data : patch or update methods
 
-    app.patch("/Package/:id", async (req, res) => {
-      const id = req.params.id;
-      //console.log(id);
-      const updatePackageData = req.body;
-      const filter = { _id: new ObjectId(id) };
-      const options = { upsert: true };
-      const updateDoc = {
-        $set: {
-          ...updatePackageData,
-        },
-      };
+    app.patch(
+      "/Package/:id",
+      authenticateUser,
+      requireRole(["admin"]),
+      validateObjectId,
+      validateInput(schemas.package),
+      async (req, res) => {
+        try {
+          const id = req.params.id;
+          const updatePackageData = req.body;
+          const filter = { _id: new ObjectId(id) };
+          const options = { upsert: false }; // Don't create if not exists
+          const updateDoc = {
+            $set: {
+              ...updatePackageData,
+              updatedAt: new Date(),
+              updatedBy: req.user.id,
+            },
+          };
 
-      //update
-      const result = await Packagecollection.updateOne(
-        filter,
-        updateDoc,
-        options
-      );
-      res.send(result);
-    });
+          // Check if package exists
+          const existingPackage = await Packagecollection.findOne(filter);
+          if (!existingPackage) {
+            return res.status(404).json({
+              error: "Package not found",
+              code: "PACKAGE_NOT_FOUND",
+            });
+          }
+
+          const result = await Packagecollection.updateOne(
+            filter,
+            updateDoc,
+            options
+          );
+
+          res.json({
+            success: true,
+            message: "Package updated successfully",
+            modifiedCount: result.modifiedCount,
+          });
+        } catch (error) {
+          console.error("Package update error:", error);
+          res.status(500).json({
+            error: "Failed to update package",
+            code: "UPDATE_FAILED",
+          });
+        }
+      }
+    );
 
     //delete package data
     app.delete(
@@ -153,11 +181,30 @@ async function run() {
 
     //To get single package data
 
-    app.get("/package/:id", async (req, res) => {
-      const id = req.params.id;
-      const filter = { _id: new ObjectId(id) };
-      const result = await Packagecollection.findOne(filter);
-      res.send(result);
+    app.get("/package/:id", validateObjectId, async (req, res) => {
+      try {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const result = await Packagecollection.findOne(filter);
+
+        if (result) {
+          res.json({
+            success: true,
+            data: result,
+          });
+        } else {
+          res.status(404).json({
+            error: "Package not found",
+            code: "PACKAGE_NOT_FOUND",
+          });
+        }
+      } catch (error) {
+        console.error("Package retrieval error:", error);
+        res.status(500).json({
+          error: "Failed to retrieve package",
+          code: "RETRIEVAL_FAILED",
+        });
+      }
     });
 
     // Send a ping to confirm a successful connection

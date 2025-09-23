@@ -9,7 +9,7 @@ const serviceCreate = async (req, res) => {
     const result = await service.save();
     res.send(result);
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -19,7 +19,7 @@ const getServices = async (req, res) => {
     const services = await Service.find().populate("vendor", "shopName");
     res.send(services.length > 0 ? services : { message: "No services found" });
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -34,7 +34,7 @@ const getVendorServices = async (req, res) => {
 
     res.send(services.length > 0 ? services : { message: "No services found" });
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -49,12 +49,12 @@ const getServiceDetail = async (req, res) => {
       .populate({
         path: "reviews.reviewer",
         model: "couple",
-        select: "name"
+        select: "name",
       });
 
     res.send(service ? service : { message: "No service found" });
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -68,12 +68,12 @@ const updateService = async (req, res) => {
     const result = await Service.findByIdAndUpdate(
       req.params.id,
       { $set: req.body },
-      { new: true }
+      { new: true, runValidators: true }
     );
 
-    res.send(result);
+    res.send(result ? result : { message: "Service not found" });
   } catch (error) {
-    res.status(500).json(error);
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -96,7 +96,7 @@ const addReview = async (req, res) => {
 
     if (existingReview) {
       return res.send({
-        message: "You have already submitted a review for this service."
+        message: "You have already submitted a review for this service.",
       });
     }
 
@@ -104,13 +104,13 @@ const addReview = async (req, res) => {
       rating,
       comment,
       reviewer,
-      date: new Date()
+      date: new Date(),
     });
 
     const updatedService = await service.save();
     res.send(updatedService);
   } catch (error) {
-    res.status(500).json(error);
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -122,13 +122,13 @@ const searchService = async (req, res) => {
       $or: [
         { serviceName: { $regex: key, $options: "i" } },
         { category: { $regex: key, $options: "i" } },
-        { subcategory: { $regex: key, $options: "i" } }
-      ]
+        { subcategory: { $regex: key, $options: "i" } },
+      ],
     }).populate("vendor", "shopName");
 
     res.send(services.length > 0 ? services : { message: "No services found" });
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -136,12 +136,12 @@ const searchServicebyCategory = async (req, res) => {
   try {
     const key = req.params.key;
     const services = await Service.find({
-      category: { $regex: key, $options: "i" }
+      category: { $regex: key, $options: "i" },
     }).populate("vendor", "shopName");
 
     res.send(services.length > 0 ? services : { message: "No services found" });
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -149,12 +149,12 @@ const searchServicebySubCategory = async (req, res) => {
   try {
     const key = req.params.key;
     const services = await Service.find({
-      subcategory: { $regex: key, $options: "i" }
+      subcategory: { $regex: key, $options: "i" },
     }).populate("vendor", "shopName");
 
     res.send(services.length > 0 ? services : { message: "No services found" });
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -174,9 +174,9 @@ const deleteService = async (req, res) => {
       );
     }
 
-    res.send(deletedService);
+    res.send(deletedService ? deletedService : { message: "Service not found" });
   } catch (error) {
-    res.status(500).json(error);
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -198,14 +198,14 @@ const deleteServices = async (req, res) => {
       { "invoiceDetails._id": { $in: deletedServices.map((s) => s._id) } },
       {
         $pull: {
-          invoiceDetails: { _id: { $in: deletedServices.map((s) => s._id) } }
-        }
+          invoiceDetails: { _id: { $in: deletedServices.map((s) => s._id) } },
+        },
       }
     );
 
     res.send(deletionResult);
   } catch (error) {
-    res.status(500).json(error);
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -226,7 +226,7 @@ const deleteServiceReview = async (req, res) => {
     const updatedService = await service.save();
     res.send(updatedService);
   } catch (error) {
-    res.status(500).json(error);
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -244,7 +244,7 @@ const deleteAllServiceReviews = async (req, res) => {
 
     res.send(updatedService);
   } catch (error) {
-    res.status(500).json(error);
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -257,7 +257,7 @@ const getInterestedCouples = async (req, res) => {
 
     const serviceId = new mongoose.Types.ObjectId(req.params.id);
     const interestedCouples = await Couple.find({
-      "invoiceDetails._id": serviceId
+      "invoiceDetails._id": serviceId,
     });
 
     const coupleDetails = interestedCouples
@@ -269,7 +269,7 @@ const getInterestedCouples = async (req, res) => {
           ? {
               coupleName: couple.name,
               coupleID: couple._id,
-              quantity: invoiceItem.quantity
+              quantity: invoiceItem.quantity,
             }
           : null;
       })
@@ -281,7 +281,7 @@ const getInterestedCouples = async (req, res) => {
         : { message: "No couples are interested in this service." }
     );
   } catch (error) {
-    res.status(500).json(error);
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -294,7 +294,7 @@ const getAddedToInvoiceServices = async (req, res) => {
     const vendorId = new mongoose.Types.ObjectId(req.params.id);
 
     const couplesWithVendorService = await Couple.find({
-      "invoiceDetails.vendor": vendorId
+      "invoiceDetails.vendor": vendorId,
     });
 
     const serviceMap = new Map();
@@ -310,7 +310,7 @@ const getAddedToInvoiceServices = async (req, res) => {
               quantity: invoiceItem.quantity,
               category: invoiceItem.category,
               subcategory: invoiceItem.subcategory,
-              serviceID: serviceId
+              serviceID: serviceId,
             });
           }
         }
@@ -322,11 +322,11 @@ const getAddedToInvoiceServices = async (req, res) => {
         ? Array.from(serviceMap.values())
         : {
             message:
-              "No services from this vendor are added to invoice by couples."
+              "No services from this vendor are added to invoice by couples.",
           }
     );
   } catch (error) {
-    res.status(500).json(error);
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -346,5 +346,5 @@ module.exports = {
   deleteServiceReview,
   deleteAllServiceReviews,
   getInterestedCouples,
-  getAddedToInvoiceServices
+  getAddedToInvoiceServices,
 };
