@@ -9,6 +9,7 @@ const bcrypt = require("bcrypt");
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
 const passport = require("passport");
+const lusca = require("lusca");
 const TodoRoutes = require("./Routes/TodoRoutes");
 const NoteRoutes = require("./Routes/NoteRoutes");
 const TaskRoutes = require("./Routes/TaskRoutes");
@@ -42,8 +43,41 @@ app.use(
   })
 );
 
+
 app.use(passport.initialize());
 app.use(passport.session());
+
+
+// CSRF protection middleware (must be after session and before routes)
+// Exclude auth and password reset routes from CSRF protection
+app.use((req, res, next) => {
+  const csrfExcluded = [
+    '/login',
+    '/register',
+    '/forgotpass',
+    /^\/resetPassword\//,
+    '/google',
+    '/google/callback',
+    '/facebook',
+    '/facebook/callback',
+    '/csrf-token',
+    '/getUser',
+    '/logout',
+    '/'
+  ];
+  const path = req.path;
+  const isExcluded = csrfExcluded.some((route) => {
+    if (route instanceof RegExp) return route.test(path);
+    return route === path;
+  });
+  if (isExcluded) return next();
+  return lusca.csrf()(req, res, next);
+});
+
+// Expose CSRF token for API clients
+app.get("/csrf-token", (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
 
 app.get("/", (req, res) => {
   res.json(" hello ");

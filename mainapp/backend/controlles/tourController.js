@@ -72,14 +72,16 @@ export const getSingleTour = async (req, res) => {
 
 //getAllTour
 export const getAllTour = async (req, res) => {
-  //for pagination
-  const page = parseInt(req.query.page);
+  // for pagination
+  const page = Number.parseInt(req.query.page, 10) || 0; // ✅ explicit base 10, safe fallback
   console.log(page);
+
   try {
     const tours = await Tour.find({})
       .populate("reviews")
       .skip(page * 8)
       .limit(8);
+
     res.status(200).json({
       success: true,
       count: tours.length,
@@ -91,27 +93,41 @@ export const getAllTour = async (req, res) => {
   }
 };
 
+
 //get tour by search
+// get tour by search (safe: no regex)
 export const getTourBysearch = async (req, res) => {
-  //here i means case sansitive
-  const city = new RegExp(req.query.city, "i");
-  const distance = parseInt(req.query.distance);
-  const maxGroupSize = parseInt(req.query.maxGroupSize);
   try {
-    //get means greater than equal
+    // normalize & validate inputs
+    const cityRaw = String(req.query.city || '').trim();
+    const distance = Number.parseInt(req.query.distance, 10);
+    const maxGroupSize = Number.parseInt(req.query.maxGroupSize, 10);
+
+    if (!cityRaw || cityRaw.length > 50) {
+      return res.status(400).json({ success: false, message: "Invalid 'city'." });
+    }
+    if (!Number.isFinite(distance) || distance < 0 || distance > 100000) {
+      return res.status(400).json({ success: false, message: "Invalid 'distance'." });
+    }
+    if (!Number.isFinite(maxGroupSize) || maxGroupSize < 1 || maxGroupSize > 100000) {
+      return res.status(400).json({ success: false, message: "Invalid 'maxGroupSize'." });
+    }
+
+    // case-insensitive equality via collation (no user regex)
     const tours = await Tour.find({
-      city,
+      city: cityRaw,
       distance: { $gte: distance },
       maxGroupSize: { $gte: maxGroupSize },
-    });
-    res.status(200).json({
+    }).collation({ locale: 'en', strength: 2 }); // strength:2 = case-insensitive
+
+    return res.status(200).json({
       success: true,
       count: tours.length,
       message: "Successfully",
       data: tours,
     });
   } catch (err) {
-    res.status(404).json({ success: false, message: "Not found" });
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
