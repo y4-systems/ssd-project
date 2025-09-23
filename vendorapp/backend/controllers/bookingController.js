@@ -1,55 +1,50 @@
 const mongoose = require("mongoose");
 const Booking = require("../models/bookingSchema.js");
+const Joi = require("joi");
+
+// ---------------- Validation Schema ----------------
+const bookingSchema = Joi.object({
+  buyer: Joi.string().required(),
+  shippingData: Joi.object().default({}),
+  bookingedServices: Joi.array()
+    .items(
+      Joi.object({
+        _id: Joi.string().required(),
+        vendor: Joi.string().required(),
+        quantity: Joi.number().min(1).required(),
+        serviceName: Joi.string().allow("").optional()
+      })
+    )
+    .min(1)
+    .required(),
+  paymentInfo: Joi.object().default({}),
+  servicesQuantity: Joi.number().min(0).required(),
+  totalPrice: Joi.number().min(0).required()
+});
 
 // ---------------- NEW BOOKING ----------------
 const newBooking = async (req, res) => {
   try {
-    const {
-      buyer,
-      shippingData,
-      bookingedServices,
-      paymentInfo,
-      servicesQuantity,
-      totalPrice
-    } = req.body;
-
-    // ✅ Validate buyer ID
-    if (!mongoose.Types.ObjectId.isValid(buyer)) {
-      return res.status(400).json({ error: "Invalid buyer ID" });
+    // ✅ Validate input with Joi
+    const { value, error } = bookingSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
     }
 
-    // ✅ Validate bookingedServices
-    if (!Array.isArray(bookingedServices) || bookingedServices.length === 0) {
-      return res
-        .status(400)
-        .json({ error: "Booked services must be a non-empty array" });
-    }
-
-    for (const service of bookingedServices) {
-      if (
-        !mongoose.Types.ObjectId.isValid(service._id) ||
-        !mongoose.Types.ObjectId.isValid(service.vendor) ||
-        typeof service.quantity !== "number" ||
-        service.quantity <= 0
-      ) {
-        return res.status(400).json({ error: "Invalid service details" });
-      }
-    }
-
-    // ✅ Safe booking creation (no raw user injection)
+    // ✅ Safe booking creation (sanitized fields only)
     const booking = await Booking.create({
-      buyer: new mongoose.Types.ObjectId(buyer),
-      shippingData: shippingData || {},
-      bookingedServices: bookingedServices.map((s) => ({
+      buyer: new mongoose.Types.ObjectId(value.buyer),
+      shippingData: value.shippingData,
+      bookingedServices: value.bookingedServices.map((s) => ({
         _id: new mongoose.Types.ObjectId(s._id),
         vendor: new mongoose.Types.ObjectId(s.vendor),
         quantity: s.quantity,
-        serviceName: s.serviceName?.toString().trim() || "Unnamed Service"
+        serviceName: s.serviceName?.trim() || "Unnamed Service"
       })),
-      paymentInfo: paymentInfo || {},
+      paymentInfo: value.paymentInfo,
       paidAt: Date.now(),
-      servicesQuantity: Number(servicesQuantity) || 0,
-      totalPrice: Number(totalPrice) || 0
+      servicesQuantity: value.servicesQuantity,
+      totalPrice: value.totalPrice
     });
 
     return res.status(201).json(booking);
