@@ -1,33 +1,63 @@
-const express = require('express');
+const express = require("express");
 const app = express();
-const cors = require('cors');
-const dotenv = require('dotenv');
+const cors = require("cors");
+const helmet = require("helmet");
+const {
+  preventNoSQLInjection,
+  createRateLimit,
+  securityHeaders,
+} = require("../../middleware/security.js");
+const dotenv = require("dotenv");
 dotenv.config();
 
 const port = 3001;
-const host = 'localhost';
-const mongoose = require('mongoose');
-const router = require('./routes/feedbackRouter');
+const host = "localhost";
+const mongoose = require("mongoose");
+const router = require("./routes/feedbackRouter");
 
-app.use(cors()); //cors origin unblocking(cross origine resoures sharing)
-app.use(express.json());
+// Security headers
+app.use(helmet());
+app.use(securityHeaders);
+
+// Rate limiting
+app.use(createRateLimit());
+
+// NoSQL injection prevention
+app.use(preventNoSQLInjection());
+
+// CORS configuration with specific origins for security
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:3004",
+    ],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+// Body parsing with security limits
+app.use(express.json({ limit: "5mb" }));
 
 // Use environment variable for MongoDB URI
 const uri = process.env.MONGO_URI;
 const connect = async () => {
-    try {
-        await mongoose.connect(uri);
-        console.log('connected to mongoDB');
-    } catch (error) {
-        console.log('mongoDB error: ',error);
-    }
+  try {
+    await mongoose.connect(uri);
+    console.log("connected to mongoDB");
+  } catch (error) {
+    console.log("mongoDB error: ", error);
+  }
 };
 
 connect();
 
 //call back function
-const server = app.listen(port,host, () => {
-    console.log(`Node server is listing to ${server.address().port}`)
+const server = app.listen(port, host, () => {
+  console.log(`Node server is listing to ${server.address().port}`);
 });
 
-app.use('/api',router);
+app.use("/api", router);
