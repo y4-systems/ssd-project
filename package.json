@@ -8,6 +8,8 @@
     "eventapp/frontend"
   ],
   "devDependencies": {
+    "axios": "^1.12.2",
+    "colors": "^1.4.0",
     "lerna": "^7.1.1"
   },
   "scripts": {
@@ -15,7 +17,10 @@
     "clean": "lerna clean"
   },
   "dependencies": {
+    "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^8.1.0",
+    "helmet": "^8.1.0",
+    "joi": "^18.0.1",
     "lusca": "^1.7.0"
   }
 }

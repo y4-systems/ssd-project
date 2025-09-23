@@ -92,19 +92,35 @@ const getGuests = async (req, res) => {
 
 const getGuestDetail = async (req, res) => {
   try {
+    // Validate ObjectId to prevent NoSQL injection
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        error: "Invalid guest ID format",
+        code: "INVALID_OBJECT_ID",
+      });
+    }
+
     let guest = await Guest.findById(req.params.id)
       .populate("event", "eventName")
       .populate("stableName", "stableName")
       .populate("examResult.subName", "subName")
       .populate("attendance.subName", "subName sessions");
+
     if (guest) {
       guest.password = undefined;
       res.send(guest);
     } else {
-      res.send({ message: "No guest found" });
+      res.status(404).json({
+        error: "Guest not found",
+        code: "GUEST_NOT_FOUND",
+      });
     }
   } catch (err) {
-    res.status(500).json(err);
+    console.error("Guest detail error:", err.message);
+    res.status(500).json({
+      error: "Failed to retrieve guest details",
+      code: "GUEST_DETAIL_ERROR",
+    });
   }
 };
 

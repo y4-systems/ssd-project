@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const Vendor = require("../models/vendorSchema.js");
 const Preference = require("../models/preferenceSchema.js");
+const mongoose = require("mongoose");
 
 const vendorRegister = async (req, res) => {
   const { name, email, password, role, event, teachPreference, teachStable } =
@@ -64,12 +65,21 @@ const vendorLogIn = async (req, res) => {
 
 const getVendors = async (req, res) => {
   try {
-    //123
-    //
-    // '{"$gt":""}'
-    let vendors = await Vendor.find({ event: req.params.id })
+    // Validate ObjectId to prevent NoSQL injection
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        error: "Invalid event ID format",
+        code: "INVALID_OBJECT_ID",
+      });
+    }
+    
+    // Convert to ObjectId for type safety
+    const eventId = mongoose.Types.ObjectId(req.params.id);
+    
+    let vendors = await Vendor.find({ event: eventId })
       .populate("teachPreference", "subName")
       .populate("teachStable", "stableName");
+      
     if (vendors.length > 0) {
       let modifiedVendors = vendors.map((vendor) => {
         return { ...vendor._doc, password: undefined };
@@ -79,24 +89,44 @@ const getVendors = async (req, res) => {
       res.send({ message: "No vendors found" });
     }
   } catch (err) {
-    res.status(500).json(err);
+    console.error("Vendors retrieval error:", err.message);
+    res.status(500).json({
+      error: "Failed to retrieve vendors",
+      code: "VENDORS_RETRIEVAL_ERROR",
+    });
   }
 };
 
 const getVendorDetail = async (req, res) => {
   try {
+    // Validate ObjectId to prevent NoSQL injection
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        error: "Invalid vendor ID format",
+        code: "INVALID_OBJECT_ID",
+      });
+    }
+    
     let vendor = await Vendor.findById(req.params.id)
       .populate("teachPreference", "subName sessions")
       .populate("event", "eventName")
       .populate("teachStable", "stableName");
+      
     if (vendor) {
       vendor.password = undefined;
       res.send(vendor);
     } else {
-      res.send({ message: "No vendor found" });
+      res.status(404).json({
+        error: "Vendor not found",
+        code: "VENDOR_NOT_FOUND",
+      });
     }
   } catch (err) {
-    res.status(500).json(err);
+    console.error("Vendor detail error:", err.message);
+    res.status(500).json({
+      error: "Failed to retrieve vendor details",
+      code: "VENDOR_DETAIL_ERROR",
+    });
   }
 };
 
