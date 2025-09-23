@@ -1,6 +1,5 @@
 const bcrypt = require("bcrypt");
-const mongoose = require("mongoose");
-const validator = require("validator"); // safer validation library
+const validator = require("validator"); // for safe validation
 const Vendor = require("../models/vendorSchema.js");
 const { createNewToken } = require("../utils/token.js");
 
@@ -9,14 +8,13 @@ const vendorRegister = async (req, res) => {
   try {
     const { email, shopName, password } = req.body;
 
-    // Input validation
+    // Basic validation
     if (!email || !shopName || !password) {
       return res
         .status(400)
         .json({ message: "Email, shop name and password are required" });
     }
 
-    // Validate email format (no regex → prevents ReDoS)
     if (!validator.isEmail(email)) {
       return res.status(400).json({ message: "Invalid email format" });
     }
@@ -33,22 +31,14 @@ const vendorRegister = async (req, res) => {
         .json({ message: "Password must be at least 6 characters long" });
     }
 
-    // Sanitize inputs
+    // Normalize inputs
     const normalizedEmail = validator.normalizeEmail(email);
     const cleanShopName = validator.escape(shopName.trim());
 
-    if (
-      typeof normalizedEmail !== "string" ||
-      typeof cleanShopName !== "string"
-    ) {
-      return res.status(400).json({ message: "Invalid input type" });
-    }
-
-    // ✅ Safer queries using .where().equals()
+    // Check for existing vendor (safe queries)
     const existingVendorByEmail = await Vendor.findOne()
       .where("email")
       .equals(normalizedEmail);
-
     if (existingVendorByEmail) {
       return res.status(400).json({ message: "Email already exists" });
     }
@@ -56,16 +46,15 @@ const vendorRegister = async (req, res) => {
     const existingShop = await Vendor.findOne()
       .where("shopName")
       .equals(cleanShopName);
-
     if (existingShop) {
       return res.status(400).json({ message: "Shop name already exists" });
     }
 
-    // Hash password securely
+    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPass = await bcrypt.hash(password, salt);
 
-    // Save new vendor
+    // Save vendor
     const vendor = new Vendor({
       email: normalizedEmail,
       shopName: cleanShopName,
@@ -76,10 +65,8 @@ const vendorRegister = async (req, res) => {
     result.password = undefined;
 
     const token = createNewToken(result._id);
-
     res.status(201).json({ ...result._doc, token });
   } catch (err) {
-    console.error("Error in vendorRegister:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -89,7 +76,6 @@ const vendorLogIn = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate input
     if (!email || !password) {
       return res
         .status(400)
@@ -102,15 +88,10 @@ const vendorLogIn = async (req, res) => {
 
     const normalizedEmail = validator.normalizeEmail(email);
 
-    if (typeof normalizedEmail !== "string") {
-      return res.status(400).json({ message: "Invalid input type" });
-    }
-
-    // ✅ Safe query
+    // Safe query
     const vendor = await Vendor.findOne()
       .where("email")
       .equals(normalizedEmail);
-
     if (!vendor) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -125,7 +106,6 @@ const vendorLogIn = async (req, res) => {
 
     res.status(200).json({ ...vendor._doc, token });
   } catch (err) {
-    console.error("Error in vendorLogIn:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 };
