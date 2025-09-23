@@ -268,11 +268,12 @@ const checkResourceAccess = async (resourceType, resourceId, userId) => {
  */
 const checkEventAccess = async (eventId, userId) => {
   try {
-    return true; // mock: allow all for demo
+    // Mock: allow all for demo
+    return true;
   } catch (error) {
     console.error(`[SECURITY] Event access check error: ${error.message}`);
-    return false;
   }
+  return false; // <-- moved outside so it's always reachable
 };
 
 module.exports = {
