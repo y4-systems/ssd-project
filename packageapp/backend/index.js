@@ -28,10 +28,10 @@ app.get("/", (req, res) => {
 });
 
 //mongodb configuration
-
+const dotenv = require("dotenv");
+dotenv.config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-const uri =
-  "mongodb+srv://demo-user:user123@cluster0.aobbdul.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const uri = process.env.MONGO_URI;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -53,34 +53,12 @@ async function run() {
       .collection("Packages");
 
     //insert a package to the database post method
-    app.post(
-      "/upload-Package",
-      authenticateUser,
-      requireRole(["admin"]),
-      validateInput(schemas.package),
-      async (req, res) => {
-        try {
-          const data = {
-            ...req.body,
-            createdBy: req.user.id,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-          const result = await Packagecollection.insertOne(data);
-          res.json({
-            success: true,
-            message: "Package created successfully",
-            id: result.insertedId,
-          });
-        } catch (error) {
-          console.error("Package creation error:", error);
-          res.status(500).json({
-            error: "Failed to create package",
-            code: "CREATION_FAILED",
-          });
-        }
-      }
-    );
+
+    app.post("/upload-Package", async (req, res) => {
+      const data = req.body;
+      const result = await Packagecollection.insertOne(data);
+      res.send(result);
+    });
 
     //get all data from the database
 
@@ -114,40 +92,13 @@ async function run() {
     });
 
     //delete package data
-    app.delete(
-      "/Package/:id",
-      authenticateUser,
-      requireRole(["admin"]),
-      validateObjectId,
-      async (req, res) => {
-        try {
-          const id = req.params.id;
-          const filter = { _id: new ObjectId(id) };
 
-          // Check if package exists
-          const existingPackage = await Packagecollection.findOne(filter);
-          if (!existingPackage) {
-            return res.status(404).json({
-              error: "Package not found",
-              code: "PACKAGE_NOT_FOUND",
-            });
-          }
-
-          const result = await Packagecollection.deleteOne(filter);
-          res.json({
-            success: true,
-            message: "Package deleted successfully",
-            deletedCount: result.deletedCount,
-          });
-        } catch (error) {
-          console.error("Package deletion error:", error);
-          res.status(500).json({
-            error: "Failed to delete package",
-            code: "DELETION_FAILED",
-          });
-        }
-      }
-    );
+    app.delete("/Package/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const result = await Packagecollection.deleteOne(filter);
+      res.send(result);
+    });
 
     //To get single package data
 
