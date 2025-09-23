@@ -1,69 +1,113 @@
-const bcrypt = require('bcrypt');
-const Vendor = require('../models/vendorSchema.js');
-const { createNewToken } = require('../utils/token.js');
+const bcrypt = require("bcrypt");
+const validator = require("validator"); // for safe validation
+const Vendor = require("../models/vendorSchema.js");
+const { createNewToken } = require("../utils/token.js");
 
+// ---------------------- Vendor Register ----------------------
 const vendorRegister = async (req, res) => {
-    try {
-        const salt = await bcrypt.genSalt(10);
-        const hashedPass = await bcrypt.hash(req.body.password, salt);
+  try {
+    const { email, shopName, password } = req.body;
 
-        const vendor = new Vendor({
-            ...req.body,
-            password: hashedPass
-        });
-
-        const existingVendorByEmail = await Vendor.findOne({ email: req.body.email });
-        const existingShop = await Vendor.findOne({ shopName: req.body.shopName });
-
-        if (existingVendorByEmail) {
-            res.send({ message: 'Email already exists' });
-        }
-        else if (existingShop) {
-            res.send({ message: 'Shop name already exists' });
-        }
-        else {
-            let result = await vendor.save();
-            result.password = undefined;
-
-            const token = createNewToken(result._id)
-
-            result = {
-                ...result._doc,
-                token: token
-            };
-
-            res.send(result);
-        }
-    } catch (err) {
-        res.status(500).json(err);
+    // Basic validation
+    if (!email || !shopName || !password) {
+      return res
+        .status(400)
+        .json({ message: "Email, shop name and password are required" });
     }
+
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+
+    if (typeof shopName !== "string" || shopName.trim().length < 3) {
+      return res
+        .status(400)
+        .json({ message: "Shop name must be at least 3 characters long" });
+    }
+
+    if (password.length < 6) {
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 6 characters long" });
+    }
+
+    // Normalize inputs
+    const normalizedEmail = validator.normalizeEmail(email);
+    const cleanShopName = validator.escape(shopName.trim());
+
+    // Check for existing vendor (safe queries)
+    const existingVendorByEmail = await Vendor.findOne()
+      .where("email")
+      .equals(normalizedEmail);
+    if (existingVendorByEmail) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
+
+    const existingShop = await Vendor.findOne()
+      .where("shopName")
+      .equals(cleanShopName);
+    if (existingShop) {
+      return res.status(400).json({ message: "Shop name already exists" });
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPass = await bcrypt.hash(password, salt);
+
+    // Save vendor
+    const vendor = new Vendor({
+      email: normalizedEmail,
+      shopName: cleanShopName,
+      password: hashedPass
+    });
+
+    let result = await vendor.save();
+    result.password = undefined;
+
+    const token = createNewToken(result._id);
+    res.status(201).json({ ...result._doc, token });
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
 };
 
+// ---------------------- Vendor Login ----------------------
 const vendorLogIn = async (req, res) => {
-    if (req.body.email && req.body.password) {
-        let vendor = await Vendor.findOne({ email: req.body.email });
-        if (vendor) {
-            const validated = await bcrypt.compare(req.body.password, vendor.password);
-            if (validated) {
-                vendor.password = undefined;
+  try {
+    const { email, password } = req.body;
 
-                const token = createNewToken(vendor._id)
-
-                vendor = {
-                    ...vendor._doc,
-                    token: token
-                };
-
-                res.send(vendor);
-            } else {
-                res.send({ message: "Invalid password" });
-            }
-        } else {
-            res.send({ message: "User not found" });
-        }
-    } else {
-        res.send({ message: "Email and password are required" });
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ message: "Email and password are required" });
     }
+
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+
+    const normalizedEmail = validator.normalizeEmail(email);
+
+    // Safe query
+    const vendor = await Vendor.findOne()
+      .where("email")
+      .equals(normalizedEmail);
+    if (!vendor) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const validated = await bcrypt.compare(password, vendor.password);
+    if (!validated) {
+      return res.status(400).json({ message: "Invalid password" });
+    }
+
+    vendor.password = undefined;
+    const token = createNewToken(vendor._id);
+
+    res.status(200).json({ ...vendor._doc, token });
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
 };
 
 module.exports = { vendorRegister, vendorLogIn };

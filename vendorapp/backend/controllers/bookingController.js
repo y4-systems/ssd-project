@@ -1,85 +1,107 @@
-const Booking = require('../models/bookingSchema.js');
+const mongoose = require("mongoose");
+const Booking = require("../models/bookingSchema.js");
 
+// ---------------- NEW BOOKING ----------------
 const newBooking = async (req, res) => {
-    try {
+  try {
+    const {
+      buyer,
+      shippingData,
+      bookingedServices,
+      paymentInfo,
+      servicesQuantity,
+      totalPrice
+    } = req.body;
 
-        const {
-            buyer,
-            shippingData,
-            bookingedServices,
-            paymentInfo,
-            servicesQuantity,
-            totalPrice,
-        } = req.body;
-
-        const booking = await Booking.create({
-            buyer,
-            shippingData,
-            bookingedServices,
-            paymentInfo,
-            paidAt: Date.now(),
-            servicesQuantity,
-            totalPrice,
-        });
-
-        return res.send(booking);
-
-    } catch (err) {
-        res.status(500).json(err);
+    // Validate user input before saving
+    if (!mongoose.Types.ObjectId.isValid(buyer)) {
+      return res.status(400).json({ error: "Invalid buyer ID" });
     }
-}
 
-const getBookingedServicesByCouple = async (req, res) => {
-    try {
-        let bookings = await Booking.find({ buyer: req.params.id });
+    const booking = await Booking.create({
+      buyer,
+      shippingData,
+      bookingedServices, // should be validated separately if nested schema allows
+      paymentInfo,
+      paidAt: Date.now(),
+      servicesQuantity,
+      totalPrice
+    });
 
-        if (bookings.length > 0) {
-            const bookingedServices = bookings.reduce((accumulator, booking) => {
-                accumulator.push(...booking.bookingedServices);
-                return accumulator;
-            }, []);
-            res.send(bookingedServices);
-        } else {
-            res.send({ message: "No services found" });
-        }
-    } catch (err) {
-        res.status(500).json(err);
-    }
+    return res.status(201).json(booking);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
-const getBookingedServicesByVendor = async (req, res) => {
-    try {
-        const vendorId = req.params.id;
+// ---------------- GET BOOKINGS BY COUPLE ----------------
+const getBookingedServicesByCouple = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-        const bookingsWithVendorId = await Booking.find({
-            'bookingedServices.vendor': vendorId
-        });
-
-        if (bookingsWithVendorId.length > 0) {
-            const bookingedServices = bookingsWithVendorId.reduce((accumulator, booking) => {
-                booking.bookingedServices.forEach(service => {
-                    const existingServiceIndex = accumulator.findIndex(p => p._id.toString() === service._id.toString());
-                    if (existingServiceIndex !== -1) {
-                        // If service already exists, merge quantities
-                        accumulator[existingServiceIndex].quantity += service.quantity;
-                    } else {
-                        // If service doesn't exist, add it to accumulator
-                        accumulator.push(service);
-                    }
-                });
-                return accumulator;
-            }, []);
-            res.send(bookingedServices);
-        } else {
-            res.send({ message: "No services found" });
-        }
-    } catch (err) {
-        res.status(500).json(err);
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "Invalid couple ID" });
     }
+
+    const bookings = await Booking.find({
+      buyer: new mongoose.Types.ObjectId(id)
+    });
+
+    if (bookings.length > 0) {
+      const bookingedServices = bookings.reduce((acc, booking) => {
+        acc.push(...booking.bookingedServices);
+        return acc;
+      }, []);
+      return res.json(bookingedServices);
+    }
+
+    res.json({ message: "No services found" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ---------------- GET BOOKINGS BY VENDOR ----------------
+const getBookingedServicesByVendor = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "Invalid vendor ID" });
+    }
+
+    const bookingsWithVendorId = await Booking.find({
+      "bookingedServices.vendor": new mongoose.Types.ObjectId(id)
+    });
+
+    if (bookingsWithVendorId.length > 0) {
+      const bookingedServices = bookingsWithVendorId.reduce((acc, booking) => {
+        booking.bookingedServices.forEach((service) => {
+          const existingIndex = acc.findIndex(
+            (p) => p._id.toString() === service._id.toString()
+          );
+          if (existingIndex !== -1) {
+            acc[existingIndex].quantity += service.quantity;
+          } else {
+            acc.push(service);
+          }
+        });
+        return acc;
+      }, []);
+
+      return res.json(bookingedServices);
+    }
+
+    res.json({ message: "No services found" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 module.exports = {
-    newBooking,
-    getBookingedServicesByCouple,
-    getBookingedServicesByVendor
+  newBooking,
+  getBookingedServicesByCouple,
+  getBookingedServicesByVendor
 };
