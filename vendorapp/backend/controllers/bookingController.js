@@ -13,19 +13,43 @@ const newBooking = async (req, res) => {
       totalPrice
     } = req.body;
 
-    // Validate user input before saving
+    // Validate buyer ID
     if (!mongoose.Types.ObjectId.isValid(buyer)) {
       return res.status(400).json({ error: "Invalid buyer ID" });
     }
 
+    // Validate bookingedServices if provided
+    if (!Array.isArray(bookingedServices) || bookingedServices.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "Booked services must be a non-empty array" });
+    }
+
+    // Ensure each booked service has proper fields
+    for (const service of bookingedServices) {
+      if (
+        !mongoose.Types.ObjectId.isValid(service._id) ||
+        !mongoose.Types.ObjectId.isValid(service.vendor) ||
+        typeof service.quantity !== "number"
+      ) {
+        return res.status(400).json({ error: "Invalid service details" });
+      }
+    }
+
+    // Create booking safely
     const booking = await Booking.create({
-      buyer,
-      shippingData,
-      bookingedServices, // should be validated separately if nested schema allows
-      paymentInfo,
+      buyer: new mongoose.Types.ObjectId(buyer),
+      shippingData: shippingData || {},
+      bookingedServices: bookingedServices.map((s) => ({
+        _id: new mongoose.Types.ObjectId(s._id),
+        vendor: new mongoose.Types.ObjectId(s.vendor),
+        quantity: s.quantity,
+        serviceName: s.serviceName
+      })),
+      paymentInfo: paymentInfo || {},
       paidAt: Date.now(),
-      servicesQuantity,
-      totalPrice
+      servicesQuantity: Number(servicesQuantity) || 0,
+      totalPrice: Number(totalPrice) || 0
     });
 
     return res.status(201).json(booking);
@@ -39,7 +63,6 @@ const getBookingedServicesByCouple = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: "Invalid couple ID" });
     }
@@ -67,7 +90,6 @@ const getBookingedServicesByVendor = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: "Invalid vendor ID" });
     }
@@ -85,7 +107,12 @@ const getBookingedServicesByVendor = async (req, res) => {
           if (existingIndex !== -1) {
             acc[existingIndex].quantity += service.quantity;
           } else {
-            acc.push(service);
+            acc.push({
+              _id: service._id,
+              vendor: service.vendor,
+              quantity: service.quantity,
+              serviceName: service.serviceName
+            });
           }
         });
         return acc;
