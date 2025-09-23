@@ -39,7 +39,15 @@ const connect = async () => {
 mainapp1.use(express.json());
 mainapp1.use(cors(corsOptions));
 mainapp1.use(cookieParser());
-mainapp1.use(csurf({ cookie: true }));
+mainapp1.use(
+  csurf({
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    },
+  })
+);
 mainapp1.use("/api/v1/auth", authRoute);
 mainapp1.use("/api/v1/tours", tourRoute);
 mainapp1.use("/api/v1/users", userRoute);
