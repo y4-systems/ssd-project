@@ -13,7 +13,7 @@ const getSecurityHeaders = (environment = "development") => {
           "'self'",
           "'unsafe-inline'",
           "fonts.googleapis.com",
-          "cdnjs.cloudflare.com",
+          "cdnjs.cloudflare.com"
         ],
         fontSrc: ["'self'", "fonts.gstatic.com", "cdnjs.cloudflare.com"],
         imgSrc: ["'self'", "data:", "https:", "*.cloudinary.com"],
@@ -26,23 +26,26 @@ const getSecurityHeaders = (environment = "development") => {
         connectSrc: [
           "'self'",
           "https://api.cloudinary.com",
-          isProduction ? "https://your-api-domain.com" : "http://localhost:*",
+          ...(isProduction
+            ? ["https://your-api-domain.com"]
+            : ["http://127.0.0.1:*", "ws://127.0.0.1:*"]) // dev: allow http/ws for local testing
         ],
-        upgradeInsecureRequests: isProduction ? [] : undefined,
+
+        upgradeInsecureRequests: isProduction ? [] : undefined
       },
-      reportOnly: !isProduction, // Report-only mode in development
+      reportOnly: !isProduction // Report-only mode in development
     },
 
     // HTTP Strict Transport Security (HSTS)
     hsts: {
       maxAge: 31536000, // 1 year in seconds
       includeSubDomains: true,
-      preload: true,
+      preload: true
     },
 
     // Prevent clickjacking
     frameguard: {
-      action: "deny", // Completely deny embedding in frames
+      action: "deny" // Completely deny embedding in frames
     },
 
     // Prevent MIME type sniffing
@@ -56,7 +59,7 @@ const getSecurityHeaders = (environment = "development") => {
 
     // Referrer Policy
     referrerPolicy: {
-      policy: ["same-origin"],
+      policy: ["same-origin"]
     },
 
     // Permissions Policy (Feature Policy)
@@ -67,13 +70,13 @@ const getSecurityHeaders = (environment = "development") => {
 
     // Cross-Origin Opener Policy
     crossOriginOpenerPolicy: {
-      policy: "same-origin",
+      policy: "same-origin"
     },
 
     // Cross-Origin Resource Policy
     crossOriginResourcePolicy: {
-      policy: "same-origin",
-    },
+      policy: "same-origin"
+    }
   });
 };
 
@@ -88,7 +91,7 @@ const getCorsOptions = (environment = "development") => {
           "http://localhost:3000",
           "http://localhost:3001",
           "http://localhost:3002",
-          "http://localhost:8080",
+          "http://localhost:8080"
         ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -97,11 +100,11 @@ const getCorsOptions = (environment = "development") => {
       "Authorization",
       "X-Requested-With",
       "Accept",
-      "Origin",
+      "Origin"
     ],
     exposedHeaders: ["Content-Range", "X-Content-Range"],
     maxAge: 86400, // 24 hours cache for preflight
-    optionsSuccessStatus: 200, // For legacy browser support
+    optionsSuccessStatus: 200 // For legacy browser support
   };
 };
 
@@ -112,14 +115,14 @@ const getRateLimitOptions = () => ({
   message: {
     error: "Too many requests from this IP",
     code: "RATE_LIMIT_EXCEEDED",
-    retryAfter: "15 minutes",
+    retryAfter: "15 minutes"
   },
   standardHeaders: true, // Return rate limit info in headers
   legacyHeaders: false,
   // Skip rate limiting for admin users
   skip: (req) => {
     return req.user && req.user.role === "admin";
-  },
+  }
 });
 
 // Security middleware setup
@@ -151,7 +154,7 @@ const setupSecurity = (app, environment = "development") => {
         return res.status(415).json({
           error: "Unsupported Media Type",
           code: "UNSUPPORTED_CONTENT_TYPE",
-          accepted: ["application/json", "multipart/form-data"],
+          accepted: ["application/json", "multipart/form-data"]
         });
       }
     }
@@ -173,12 +176,12 @@ const getSessionConfig = (environment = "development") => {
       secure: isProduction, // HTTPS only in production
       sameSite: "strict", // CSRF protection
       maxAge: 15 * 60 * 1000, // 15 minutes
-      domain: isProduction ? ".your-wedding-app.com" : undefined,
+      domain: isProduction ? ".your-wedding-app.com" : undefined
     },
     genid: () => {
       // Generate cryptographically secure session IDs
       return require("crypto").randomBytes(32).toString("hex");
-    },
+    }
   };
 };
 
@@ -187,5 +190,5 @@ module.exports = {
   getCorsOptions,
   getRateLimitOptions,
   setupSecurity,
-  getSessionConfig,
+  getSessionConfig
 };
