@@ -1,24 +1,37 @@
-const express = require('express')
-const app = express()
+const express = require("express");
+const app = express();
 const port = process.env.PORT || 5000;
-const cors = require('cors')
+const cors = require("cors");
+const {
+  preventNoSQLInjection,
+  validateObjectId,
+  validateInput,
+  schemas,
+} = require("../../middleware/security.js");
+const { authenticateUser, requireRole } = require("../../middleware/auth.js");
 
 //middleware
-app.use(cors());
-app.use(express.json());
-
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "http://localhost:3001"],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  })
+);
+app.use(express.json({ limit: "5mb" }));
+app.use(preventNoSQLInjection());
 
 //pw -user123
 
-app.get('/', (req, res) => {
-  res.send('Hello World!')
-})
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
 
 //mongodb configuration
 
-
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const uri = "mongodb+srv://demo-user:user123@cluster0.aobbdul.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const uri =
+  "mongodb+srv://demo-user:user123@cluster0.aobbdul.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -26,7 +39,7 @@ const client = new MongoClient(uri, {
     version: ServerApiVersion.v1,
     strict: true,
     deprecationErrors: true,
-  }
+  },
 });
 
 async function run() {
@@ -35,69 +48,122 @@ async function run() {
     await client.connect();
 
     //create a collection of documents
-    const Packagecollection = await client.db("PackageInventory").collection("Packages");
-
+    const Packagecollection = await client
+      .db("PackageInventory")
+      .collection("Packages");
 
     //insert a package to the database post method
-
-    app.post("/upload-Package",async(req,res) => { 
-        const data = req.body;
-        const result = await Packagecollection.insertOne(data);
-        res.send(result);
-    });
-
+    app.post(
+      "/upload-Package",
+      authenticateUser,
+      requireRole(["admin"]),
+      validateInput(schemas.package),
+      async (req, res) => {
+        try {
+          const data = {
+            ...req.body,
+            createdBy: req.user.id,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          const result = await Packagecollection.insertOne(data);
+          res.json({
+            success: true,
+            message: "Package created successfully",
+            id: result.insertedId,
+          });
+        } catch (error) {
+          console.error("Package creation error:", error);
+          res.status(500).json({
+            error: "Failed to create package",
+            code: "CREATION_FAILED",
+          });
+        }
+      }
+    );
 
     //get all data from the database
 
-    app.get("/all-Packages",async(reg,res)=>{
-        const packages =  Packagecollection.find();
-        const result = await packages.toArray();
-        res.send(result);
-    })
-
+    app.get("/all-Packages", async (reg, res) => {
+      const packages = Packagecollection.find();
+      const result = await packages.toArray();
+      res.send(result);
+    });
 
     //update a package data : patch or update methods
 
-    app.patch("/Package/:id",async(req,res) => {
-        const id = req.params.id;
-        //console.log(id);
-        const updatePackageData = req.body;
-        const filter = {_id: new ObjectId(id)};
-        const options = {upsert: true};
-        const updateDoc ={
-            $set: {
-                ...updatePackageData
-            }
-        }
+    app.patch("/Package/:id", async (req, res) => {
+      const id = req.params.id;
+      //console.log(id);
+      const updatePackageData = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          ...updatePackageData,
+        },
+      };
 
-        //update
-        const result = await Packagecollection.updateOne(filter,updateDoc,options );
-        res.send(result); 
-    })
-
+      //update
+      const result = await Packagecollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.send(result);
+    });
 
     //delete package data
+    app.delete(
+      "/Package/:id",
+      authenticateUser,
+      requireRole(["admin"]),
+      validateObjectId,
+      async (req, res) => {
+        try {
+          const id = req.params.id;
+          const filter = { _id: new ObjectId(id) };
 
-    app.delete("/Package/:id",async(req,res) => {
-        const id = req.params.id;
-        const filter = {_id: new ObjectId(id)};
-        const result = await Packagecollection.deleteOne(filter);
-        res.send(result);
-    })
+          // Check if package exists
+          const existingPackage = await Packagecollection.findOne(filter);
+          if (!existingPackage) {
+            return res.status(404).json({
+              error: "Package not found",
+              code: "PACKAGE_NOT_FOUND",
+            });
+          }
+
+          const result = await Packagecollection.deleteOne(filter);
+          res.json({
+            success: true,
+            message: "Package deleted successfully",
+            deletedCount: result.deletedCount,
+          });
+        } catch (error) {
+          console.error("Package deletion error:", error);
+          res.status(500).json({
+            error: "Failed to delete package",
+            code: "DELETION_FAILED",
+          });
+        }
+      }
+    );
 
     //To get single package data
 
-    app.get("/package/:id", async(req,res) => {
+    app.get("/package/:id", async (req, res) => {
       const id = req.params.id;
-      const filter = {_id:new ObjectId(id)};
+      const filter = { _id: new ObjectId(id) };
       const result = await Packagecollection.findOne(filter);
       res.send(result);
-    })
+    });
 
-   // Send a ping to confirm a successful connection
+    // Send a ping to confirm a successful connection
 
     await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    console.log(
+      "Pinged your deployment. You successfully connected to MongoDB!"
+    );
   } finally {
     // Ensures that the client will close when you finish/error
     //await client.close();
@@ -105,7 +171,6 @@ async function run() {
 }
 run().catch(console.dir);
 
-
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
-})
+  console.log(`Example app listening on port ${port}`);
+});

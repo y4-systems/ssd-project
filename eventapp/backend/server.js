@@ -2,11 +2,23 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const dbConnection = require("./utils/database");
+const {
+  setupSecurity,
+  getCorsOptions,
+} = require("../../middleware/securityHeaders.js");
 
 const app = express();
+const environment = process.env.NODE_ENV || "development";
 
-app.use(cors());
-app.use(express.json());
+// Setup security headers and middleware
+setupSecurity(app, environment);
+
+// CORS configuration
+app.use(cors(getCorsOptions(environment)));
+
+// Body parsing with security limits
+app.use(express.json({ limit: "5mb" }));
+app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 
 const port = process.env.PORT || 5003;
 
