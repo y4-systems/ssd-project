@@ -23,8 +23,12 @@ const authenticateUser = async (req, res, next) => {
       });
     }
 
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    // Verify token with specific algorithm to prevent attacks
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY, {
+      algorithms: ["HS256"],
+      issuer: "wedding-management-system",
+      maxAge: "1h",
+    });
 
     // Get user from database
     const user = await User.findById(decoded.id);
