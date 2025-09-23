@@ -28,7 +28,7 @@ const getSecurityHeaders = (environment = "development") => {
           "https://api.cloudinary.com",
           ...(isProduction
             ? ["https://your-api-domain.com"]
-            : ["http://127.0.0.1:*", "ws://127.0.0.1:*"]) // dev: allow http/ws for local testing
+            : ["https://127.0.0.1:*", "ws://127.0.0.1:*"]) // dev: allow http/ws for local testing
         ],
 
         upgradeInsecureRequests: isProduction ? [] : undefined
