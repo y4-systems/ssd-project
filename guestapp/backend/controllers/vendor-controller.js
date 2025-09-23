@@ -32,6 +32,7 @@ const vendorRegister = async (req, res) => {
       res.send(result);
     }
   } catch (err) {
+    o;
     res.status(500).json(err);
   }
 };
@@ -63,6 +64,9 @@ const vendorLogIn = async (req, res) => {
 
 const getVendors = async (req, res) => {
   try {
+    //123
+    //
+    // '{"$gt":""}'
     let vendors = await Vendor.find({ event: req.params.id })
       .populate("teachPreference", "subName")
       .populate("teachStable", "stableName");

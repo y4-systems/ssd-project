@@ -1,6 +1,8 @@
 const bcrypt = require("bcrypt");
 const Guest = require("../models/guestSchema.js");
 const Preference = require("../models/preferenceSchema.js");
+const mongoose = require("mongoose");
+const { schemas } = require("../../../middleware/security.js");
 
 const guestRegister = async (req, res) => {
   try {
@@ -60,7 +62,18 @@ const guestLogIn = async (req, res) => {
 
 const getGuests = async (req, res) => {
   try {
-    let guests = await Guest.find({ event: req.params.id }).populate(
+    // Validate Object ID format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        error: "Invalid event ID format",
+        code: "INVALID_OBJECT_ID",
+      });
+    }
+
+    // Convert to ObjectId to prevent injection
+    const eventId = mongoose.Types.ObjectId(req.params.id);
+
+    let guests = await Guest.find({ event: eventId }).populate(
       "stableName",
       "stableName"
     );

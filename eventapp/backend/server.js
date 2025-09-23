@@ -4,6 +4,10 @@ const cors = require("cors");
 require("dotenv").config();
 
 const dbConnection = require("./utils/database");
+const {
+  setupSecurity,
+  getCorsOptions,
+} = require("../../middleware/securityHeaders.js");
 
 // --- Auth deps ---
 const session = require("express-session");
@@ -14,10 +18,21 @@ const User = require("./models/user/user.model");
 
 // --- App setup ---
 const app = express();
+
+const environment = process.env.NODE_ENV || "development";
+
+// Setup security headers and middleware
+setupSecurity(app, environment);
+
+// CORS configuration
+app.use(cors(getCorsOptions(environment)));
+
+// Body parsing with security limits
+app.use(express.json({ limit: "5mb" }));
+app.use(express.urlencoded({ extended: true, limit: "5mb" }));
+
 const port = process.env.PORT || 5003;
 
-// Parse JSON
-app.use(express.json());
 
 // CORS: allow your frontend + credentials (cookies)
 app.use(
