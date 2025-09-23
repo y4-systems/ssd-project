@@ -206,7 +206,7 @@ const testSecurityMisconfiguration = async () => {
     // 3.1 CORS restrictions
     totalTests++;
     const res1 = await axios.get(`${BASE_URLS.packages}/all-Packages`, {
-      headers: { Origin: "http://malicious-site.com" },
+      headers: { Origin: "https://malicious-site.com" },
       validateStatus: () => true
     });
     let corsHeader = res1.headers["access-control-allow-origin"];
