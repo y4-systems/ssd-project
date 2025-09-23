@@ -28,12 +28,10 @@ app.get("/", (req, res) => {
 });
 
 //mongodb configuration
-
-const dotenv = require('dotenv');
+const dotenv = require("dotenv");
 dotenv.config();
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = process.env.MONGO_URI;
-
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -55,6 +53,7 @@ async function run() {
       .collection("Packages");
 
     //insert a package to the database post method
+
     app.post(
       "/upload-Package",
       authenticateUser,
@@ -75,7 +74,7 @@ async function run() {
             id: result.insertedId,
           });
         } catch (error) {
-          console.error("Package creation error:", error);
+          console.error("Package creation failed:", error.message);
           res.status(500).json({
             error: "Failed to create package",
             code: "CREATION_FAILED",
@@ -116,6 +115,7 @@ async function run() {
     });
 
     //delete package data
+
     app.delete(
       "/Package/:id",
       authenticateUser,
@@ -142,7 +142,7 @@ async function run() {
             deletedCount: result.deletedCount,
           });
         } catch (error) {
-          console.error("Package deletion error:", error);
+          console.error("Package deletion failed:", error.message);
           res.status(500).json({
             error: "Failed to delete package",
             code: "DELETION_FAILED",

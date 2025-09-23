@@ -41,14 +41,20 @@ const validateInput = (schema) => {
 // Search query sanitizer
 const sanitizeSearchQuery = (req, res, next) => {
   if (req.query.search) {
-    // Escape special regex characters
-    req.query.search = req.query.search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-    // Limit search length
+    // Validate search query length first
     if (req.query.search.length > 100) {
       return res.status(400).json({
         error: "Search query too long",
         code: "SEARCH_TOO_LONG",
+      });
+    }
+
+    // Use safer character allowlist instead of escaping
+    const safePattern = /^[a-zA-Z0-9\s\-_]+$/;
+    if (!safePattern.test(req.query.search)) {
+      return res.status(400).json({
+        error: "Search query contains invalid characters",
+        code: "INVALID_SEARCH_CHARS",
       });
     }
   }

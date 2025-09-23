@@ -9,16 +9,7 @@ const {
   getCorsOptions,
 } = require("../../middleware/securityHeaders.js");
 
-// --- Auth deps ---
-const session = require("express-session");
-const passport = require("passport");
-const GoogleStrategy = require("passport-google-oauth20").Strategy;
-const jwt = require("jsonwebtoken");
-const User = require("./models/user/user.model");
-
-// --- App setup ---
 const app = express();
-
 const environment = process.env.NODE_ENV || "development";
 
 // Setup security headers and middleware
@@ -32,7 +23,6 @@ app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 
 const port = process.env.PORT || 5003;
-
 
 // CORS: allow your frontend + credentials (cookies)
 app.use(
