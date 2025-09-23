@@ -13,30 +13,30 @@ const newBooking = async (req, res) => {
       totalPrice
     } = req.body;
 
-    // Validate buyer ID
+    // ✅ Validate buyer ID
     if (!mongoose.Types.ObjectId.isValid(buyer)) {
       return res.status(400).json({ error: "Invalid buyer ID" });
     }
 
-    // Validate bookingedServices if provided
+    // ✅ Validate bookingedServices
     if (!Array.isArray(bookingedServices) || bookingedServices.length === 0) {
       return res
         .status(400)
         .json({ error: "Booked services must be a non-empty array" });
     }
 
-    // Ensure each booked service has proper fields
     for (const service of bookingedServices) {
       if (
         !mongoose.Types.ObjectId.isValid(service._id) ||
         !mongoose.Types.ObjectId.isValid(service.vendor) ||
-        typeof service.quantity !== "number"
+        typeof service.quantity !== "number" ||
+        service.quantity <= 0
       ) {
         return res.status(400).json({ error: "Invalid service details" });
       }
     }
 
-    // Create booking safely
+    // ✅ Safe booking creation (no raw user injection)
     const booking = await Booking.create({
       buyer: new mongoose.Types.ObjectId(buyer),
       shippingData: shippingData || {},
@@ -44,7 +44,7 @@ const newBooking = async (req, res) => {
         _id: new mongoose.Types.ObjectId(s._id),
         vendor: new mongoose.Types.ObjectId(s.vendor),
         quantity: s.quantity,
-        serviceName: s.serviceName
+        serviceName: s.serviceName?.toString().trim() || "Unnamed Service"
       })),
       paymentInfo: paymentInfo || {},
       paidAt: Date.now(),
@@ -72,10 +72,9 @@ const getBookingedServicesByCouple = async (req, res) => {
     });
 
     if (bookings.length > 0) {
-      const bookingedServices = bookings.reduce((acc, booking) => {
-        acc.push(...booking.bookingedServices);
-        return acc;
-      }, []);
+      const bookingedServices = bookings.flatMap(
+        (booking) => booking.bookingedServices
+      );
       return res.json(bookingedServices);
     }
 
@@ -101,18 +100,20 @@ const getBookingedServicesByVendor = async (req, res) => {
     if (bookingsWithVendorId.length > 0) {
       const bookingedServices = bookingsWithVendorId.reduce((acc, booking) => {
         booking.bookingedServices.forEach((service) => {
-          const existingIndex = acc.findIndex(
-            (p) => p._id.toString() === service._id.toString()
-          );
-          if (existingIndex !== -1) {
-            acc[existingIndex].quantity += service.quantity;
-          } else {
-            acc.push({
-              _id: service._id,
-              vendor: service.vendor,
-              quantity: service.quantity,
-              serviceName: service.serviceName
-            });
+          if (service.vendor.toString() === id.toString()) {
+            const existingIndex = acc.findIndex(
+              (p) => p._id.toString() === service._id.toString()
+            );
+            if (existingIndex !== -1) {
+              acc[existingIndex].quantity += service.quantity;
+            } else {
+              acc.push({
+                _id: service._id,
+                vendor: service.vendor,
+                quantity: service.quantity,
+                serviceName: service.serviceName
+              });
+            }
           }
         });
         return acc;
