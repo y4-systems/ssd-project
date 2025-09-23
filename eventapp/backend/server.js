@@ -24,9 +24,6 @@ app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 
 const port = process.env.PORT || 5003;
 
-// Parse JSON
-app.use(express.json());
-
 // CORS: allow your frontend + credentials (cookies)
 app.use(
   cors({
