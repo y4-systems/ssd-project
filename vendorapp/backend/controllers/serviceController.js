@@ -145,9 +145,9 @@ const searchService = async (req, res) => {
 
     const services = await Service.find({
       $or: [
-        { serviceName: { $regex: escapedKey, $options: "i" } },
-        { category: { $regex: escapedKey, $options: "i" } },
-        { subcategory: { $regex: escapedKey, $options: "i" } },
+        { serviceName: { $regex: safeKey, $options: "i" } },
+        { category: { $regex: safeKey, $options: "i" } },
+        { subcategory: { $regex: safeKey, $options: "i" } },
       ],
     })
       .populate("vendor", "shopName")
@@ -207,7 +207,7 @@ const searchServicebySubCategory = async (req, res) => {
     const safeKey = escapeRegex(validator.escape(key.trim()));
 
     let services = await Service.find({
-      $or: [{ subcategory: { $regex: escapedKey, $options: "i" } }],
+      $or: [{ subcategory: { $regex: safeKey, $options: "i" } }],
     })
       .populate("vendor", "shopName")
       .limit(50);
