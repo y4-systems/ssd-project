@@ -28,7 +28,18 @@ const stableCreate = async (req, res) => {
 
 const stableList = async (req, res) => {
   try {
-    let stablees = await Stable.find({ event: req.params.id });
+    // ✅ DIRECT NoSQL INJECTION PROTECTION
+    const id = req.params.id;
+
+    // Validate ObjectId format to prevent NoSQL injection
+    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        error: "Invalid event ID format",
+        code: "INVALID_OBJECT_ID",
+      });
+    }
+
+    let stablees = await Stable.find({ event: id });
     if (stablees.length > 0) {
       res.send(stablees);
     } else {
@@ -41,7 +52,18 @@ const stableList = async (req, res) => {
 
 const getStableDetail = async (req, res) => {
   try {
-    let stable = await Stable.findById(req.params.id);
+    // ✅ DIRECT NoSQL INJECTION PROTECTION
+    const id = req.params.id;
+
+    // Validate ObjectId format to prevent NoSQL injection
+    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        error: "Invalid stable ID format",
+        code: "INVALID_OBJECT_ID",
+      });
+    }
+
+    let stable = await Stable.findById(id);
     if (stable) {
       stable = await stable.populate("event", "eventName");
       res.send(stable);
@@ -55,7 +77,18 @@ const getStableDetail = async (req, res) => {
 
 const getStableGuests = async (req, res) => {
   try {
-    let guests = await Guest.find({ stableName: req.params.id });
+    // ✅ DIRECT NoSQL INJECTION PROTECTION
+    const id = req.params.id;
+
+    // Validate ObjectId format to prevent NoSQL injection
+    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        error: "Invalid stable ID format",
+        code: "INVALID_OBJECT_ID",
+      });
+    }
+
+    let guests = await Guest.find({ stableName: id });
     if (guests.length > 0) {
       let modifiedGuests = guests.map((guest) => {
         return { ...guest._doc, password: undefined };

@@ -65,21 +65,21 @@ const vendorLogIn = async (req, res) => {
 
 const getVendors = async (req, res) => {
   try {
-    // Validate ObjectId to prevent NoSQL injection
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    // ✅ DIRECT NoSQL INJECTION PROTECTION
+    const id = req.params.id;
+
+    // Comprehensive ObjectId validation to prevent NoSQL injection
+    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
       return res.status(400).json({
         error: "Invalid event ID format",
         code: "INVALID_OBJECT_ID",
       });
     }
-    
-    // Convert to ObjectId for type safety
-    const eventId = mongoose.Types.ObjectId(req.params.id);
-    
-    let vendors = await Vendor.find({ event: eventId })
+
+    let vendors = await Vendor.find({ event: id })
       .populate("teachPreference", "subName")
       .populate("teachStable", "stableName");
-      
+
     if (vendors.length > 0) {
       let modifiedVendors = vendors.map((vendor) => {
         return { ...vendor._doc, password: undefined };
@@ -99,19 +99,22 @@ const getVendors = async (req, res) => {
 
 const getVendorDetail = async (req, res) => {
   try {
-    // Validate ObjectId to prevent NoSQL injection
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    // ✅ DIRECT NoSQL INJECTION PROTECTION
+    const id = req.params.id;
+
+    // Comprehensive ObjectId validation to prevent NoSQL injection
+    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
       return res.status(400).json({
         error: "Invalid vendor ID format",
         code: "INVALID_OBJECT_ID",
       });
     }
-    
-    let vendor = await Vendor.findById(req.params.id)
+
+    let vendor = await Vendor.findById(id)
       .populate("teachPreference", "subName sessions")
       .populate("event", "eventName")
       .populate("teachStable", "stableName");
-      
+
     if (vendor) {
       vendor.password = undefined;
       res.send(vendor);
@@ -224,7 +227,18 @@ const vendorAttendance = async (req, res) => {
   const { status, date } = req.body;
 
   try {
-    const vendor = await Vendor.findById(req.params.id);
+    // ✅ DIRECT NoSQL INJECTION PROTECTION
+    const id = req.params.id;
+
+    // Validate ObjectId format to prevent NoSQL injection
+    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        error: "Invalid vendor ID format",
+        code: "INVALID_OBJECT_ID",
+      });
+    }
+
+    const vendor = await Vendor.findById(id);
 
     if (!vendor) {
       return res.send({ message: "Vendor not found" });

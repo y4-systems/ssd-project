@@ -92,15 +92,18 @@ const getGuests = async (req, res) => {
 
 const getGuestDetail = async (req, res) => {
   try {
-    // Validate ObjectId to prevent NoSQL injection
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    // ✅ DIRECT NoSQL INJECTION PROTECTION
+    const id = req.params.id;
+
+    // Comprehensive ObjectId validation to prevent NoSQL injection
+    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
       return res.status(400).json({
         error: "Invalid guest ID format",
         code: "INVALID_OBJECT_ID",
       });
     }
 
-    let guest = await Guest.findById(req.params.id)
+    let guest = await Guest.findById(id)
       .populate("event", "eventName")
       .populate("stableName", "stableName")
       .populate("examResult.subName", "subName")
@@ -182,7 +185,18 @@ const updateExamResult = async (req, res) => {
   const { subName, obligesObtained } = req.body;
 
   try {
-    const guest = await Guest.findById(req.params.id);
+    // ✅ DIRECT NoSQL INJECTION PROTECTION
+    const id = req.params.id;
+
+    // Validate ObjectId format to prevent NoSQL injection
+    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        error: "Invalid guest ID format",
+        code: "INVALID_OBJECT_ID",
+      });
+    }
+
+    const guest = await Guest.findById(id);
 
     if (!guest) {
       return res.send({ message: "Guest not found" });
@@ -209,7 +223,18 @@ const guestAttendance = async (req, res) => {
   const { subName, status, date } = req.body;
 
   try {
-    const guest = await Guest.findById(req.params.id);
+    // ✅ DIRECT NoSQL INJECTION PROTECTION
+    const id = req.params.id;
+
+    // Validate ObjectId format to prevent NoSQL injection
+    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        error: "Invalid guest ID format",
+        code: "INVALID_OBJECT_ID",
+      });
+    }
+
+    const guest = await Guest.findById(id);
 
     if (!guest) {
       return res.send({ message: "Guest not found" });

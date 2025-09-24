@@ -81,7 +81,18 @@ const freePreferenceList = async (req, res) => {
 
 const getPreferenceDetail = async (req, res) => {
   try {
-    let preference = await Preference.findById(req.params.id);
+    // ✅ DIRECT NoSQL INJECTION PROTECTION
+    const id = req.params.id;
+
+    // Validate ObjectId format to prevent NoSQL injection
+    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        error: "Invalid preference ID format",
+        code: "INVALID_OBJECT_ID",
+      });
+    }
+
+    let preference = await Preference.findById(id);
     if (preference) {
       preference = await preference.populate("stableName", "stableName");
       preference = await preference.populate("vendor", "name");

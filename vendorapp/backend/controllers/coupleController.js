@@ -1,97 +1,110 @@
-const bcrypt = require('bcrypt');
-const Couple = require('../models/coupleSchema.js');
-const { createNewToken } = require('../utils/token.js');
+const bcrypt = require("bcrypt");
+const Couple = require("../models/coupleSchema.js");
+const { createNewToken } = require("../utils/token.js");
 
 const coupleRegister = async (req, res) => {
-    try {
-        const salt = await bcrypt.genSalt(10);
-        const hashedPass = await bcrypt.hash(req.body.password, salt);
+  try {
+    const salt = await bcrypt.genSalt(10);
+    const hashedPass = await bcrypt.hash(req.body.password, salt);
 
-        const couple = new Couple({
-            ...req.body,
-            password: hashedPass
-        });
+    const couple = new Couple({
+      ...req.body,
+      password: hashedPass,
+    });
 
-        const existingcoupleByEmail = await Couple.findOne({ email: req.body.email });
+    const existingcoupleByEmail = await Couple.findOne({
+      email: req.body.email,
+    });
 
-        if (existingcoupleByEmail) {
-            res.send({ message: 'Email already exists' });
-        }
-        else {
-            let result = await couple.save();
-            result.password = undefined;
-            
-            const token = createNewToken(result._id)
+    if (existingcoupleByEmail) {
+      res.send({ message: "Email already exists" });
+    } else {
+      let result = await couple.save();
+      result.password = undefined;
 
-            result = {
-                ...result._doc,
-                token: token
-            };
+      const token = createNewToken(result._id);
 
-            res.send(result);
-        }
-    } catch (err) {
-        res.status(500).json(err);
+      result = {
+        ...result._doc,
+        token: token,
+      };
+
+      res.send(result);
     }
+  } catch (err) {
+    res.status(500).json(err);
+  }
 };
 
 const coupleLogIn = async (req, res) => {
-    if (req.body.email && req.body.password) {
-        let couple = await Couple.findOne({ email: req.body.email });
-        if (couple) {
-            const validated = await bcrypt.compare(req.body.password, couple.password);
-            if (validated) {
-                couple.password = undefined;
+  if (req.body.email && req.body.password) {
+    let couple = await Couple.findOne({ email: req.body.email });
+    if (couple) {
+      const validated = await bcrypt.compare(
+        req.body.password,
+        couple.password
+      );
+      if (validated) {
+        couple.password = undefined;
 
-                const token = createNewToken(couple._id)
+        const token = createNewToken(couple._id);
 
-                couple = {
-                    ...couple._doc,
-                    token: token
-                };
+        couple = {
+          ...couple._doc,
+          token: token,
+        };
 
-                res.send(couple);
-            } else {
-                res.send({ message: "Invalid password" });
-            }
-        } else {
-            res.send({ message: "User not found" });
-        }
+        res.send(couple);
+      } else {
+        res.send({ message: "Invalid password" });
+      }
     } else {
-        res.send({ message: "Email and password are required" });
+      res.send({ message: "User not found" });
     }
+  } else {
+    res.send({ message: "Email and password are required" });
+  }
 };
 
 const getInvoiceDetail = async (req, res) => {
-    try {
-        let couple = await Couple.findById(req.params.id)
-        if (couple) {
-            res.send(couple.invoiceDetails);
-        }
-        else {
-            res.send({ message: "No couple found" });
-        }
-    } catch (err) {
-        res.status(500).json(err);
+  try {
+    // ✅ DIRECT NoSQL INJECTION PROTECTION
+    const id = req.params.id;
+
+    // Validate ObjectId format to prevent NoSQL injection
+    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        error: "Invalid couple ID format",
+        code: "INVALID_OBJECT_ID",
+      });
     }
-}
+
+    let couple = await Couple.findById(id);
+    if (couple) {
+      res.send(couple.invoiceDetails);
+    } else {
+      res.send({ message: "No couple found" });
+    }
+  } catch (err) {
+    res.status(500).json(err);
+  }
+};
 
 const invoiceUpdate = async (req, res) => {
-    try {
+  try {
+    let couple = await Couple.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
 
-        let couple = await Couple.findByIdAndUpdate(req.params.id, req.body,
-            { new: true })
-
-        return res.send(couple.invoiceDetails);
-
-    } catch (err) {
-        res.status(500).json(err);
-    }
-}
+    return res.send(couple.invoiceDetails);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+};
 
 module.exports = {
-    coupleRegister,
-    coupleLogIn,
-    getInvoiceDetail,
-    invoiceUpdate,
+  coupleRegister,
+  coupleLogIn,
+  getInvoiceDetail,
+  invoiceUpdate,
 };

@@ -9,12 +9,12 @@ const loginLimiter = rateLimit({
   max: 5, // limit each IP to 5 login attempts per window
   message: { error: "Too many login attempts. Please try again later." },
   standardHeaders: true, // Return rate limit info in headers
-  legacyHeaders: false // Disable the X-RateLimit headers
+  legacyHeaders: false, // Disable the X-RateLimit headers
 });
 
 const {
   vendorRegister,
-  vendorLogIn
+  vendorLogIn,
 } = require("../controllers/vendorController.js");
 
 const {
@@ -32,20 +32,20 @@ const {
   deleteAllServiceReviews,
   addReview,
   getInterestedCouples,
-  getAddedToInvoiceServices
+  getAddedToInvoiceServices,
 } = require("../controllers/serviceController.js");
 
 const {
   coupleRegister,
   coupleLogIn,
   getInvoiceDetail,
-  invoiceUpdate
+  invoiceUpdate,
 } = require("../controllers/coupleController.js");
 
 const {
   newBooking,
   getBookingedServicesByCouple,
-  getBookingedServicesByVendor
+  getBookingedServicesByVendor,
 } = require("../controllers/bookingController.js");
 
 // Vendor

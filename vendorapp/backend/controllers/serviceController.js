@@ -61,15 +61,18 @@ const getVendorServices = async (req, res) => {
 
 const getServiceDetail = async (req, res) => {
   try {
-    // Validate ObjectId to prevent NoSQL injection
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    // ✅ DIRECT NoSQL INJECTION PROTECTION
+    const id = req.params.id;
+
+    // Comprehensive ObjectId validation to prevent NoSQL injection
+    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
       return res.status(400).json({
         error: "Invalid service ID format",
         code: "INVALID_OBJECT_ID",
       });
     }
 
-    let service = await Service.findById(req.params.id)
+    let service = await Service.findById(id)
       .populate("vendor", "shopName")
       .populate({
         path: "reviews.reviewer",
@@ -96,8 +99,11 @@ const getServiceDetail = async (req, res) => {
 
 const updateService = async (req, res) => {
   try {
-    // Validate ObjectId to prevent NoSQL injection
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    // ✅ DIRECT NoSQL INJECTION PROTECTION
+    const id = req.params.id;
+
+    // Comprehensive ObjectId validation to prevent NoSQL injection
+    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
       return res.status(400).json({
         error: "Invalid service ID format",
         code: "INVALID_OBJECT_ID",
@@ -105,7 +111,7 @@ const updateService = async (req, res) => {
     }
 
     let result = await Service.findByIdAndUpdate(
-      req.params.id,
+      id,
       { $set: req.body },
       { new: true }
     );
@@ -209,18 +215,19 @@ const searchService = async (req, res) => {
 
 const searchServicebyCategory = async (req, res) => {
   try {
+    // ✅ DIRECT NoSQL INJECTION PROTECTION FOR SEARCH
     const key = req.params.key;
 
-    // Validate search key to prevent ReDoS and NoSQL injection
-    if (!key || key.length > 100) {
+    // Comprehensive validation to prevent ReDoS and NoSQL injection
+    if (!key || typeof key !== "string" || key.length > 100) {
       return res.status(400).json({
         error: "Invalid search key (max 100 characters)",
         code: "INVALID_SEARCH_KEY",
       });
     }
 
-    // Use safe pattern matching instead of direct regex
-    const safePattern = /^[a-zA-Z0-9\s\-_.&]+$/;
+    // Use safe allowlist pattern to prevent ReDoS attacks
+    const safePattern = /^[a-zA-Z0-9\s\-_.@]+$/;
     if (!safePattern.test(key)) {
       return res.status(400).json({
         error: "Search key contains invalid characters",
@@ -297,15 +304,18 @@ const searchServicebySubCategory = async (req, res) => {
 
 const deleteService = async (req, res) => {
   try {
-    // Validate ObjectId to prevent NoSQL injection
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    // ✅ DIRECT NoSQL INJECTION PROTECTION
+    const id = req.params.id;
+
+    // Comprehensive ObjectId validation to prevent NoSQL injection
+    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
       return res.status(400).json({
         error: "Invalid service ID format",
         code: "INVALID_OBJECT_ID",
       });
     }
 
-    const deletedService = await Service.findByIdAndDelete(req.params.id);
+    const deletedService = await Service.findByIdAndDelete(id);
 
     if (!deletedService) {
       return res.status(404).json({
