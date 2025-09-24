@@ -2,6 +2,7 @@ const bcrypt = require("bcrypt");
 const Couple = require("../models/coupleSchema.js");
 const { createNewToken } = require("../utils/token.js");
 
+// ---------------------- Couple Register ----------------------
 const coupleRegister = async (req, res) => {
   try {
     const salt = await bcrypt.genSalt(10);
@@ -36,6 +37,7 @@ const coupleRegister = async (req, res) => {
   }
 };
 
+// ---------------------- Couple Login ----------------------
 const coupleLogIn = async (req, res) => {
   if (req.body.email && req.body.password) {
     let couple = await Couple.findOne({ email: req.body.email });
@@ -68,18 +70,7 @@ const coupleLogIn = async (req, res) => {
 
 const getInvoiceDetail = async (req, res) => {
   try {
-    // ✅ DIRECT NoSQL INJECTION PROTECTION
-    const id = req.params.id;
-
-    // Validate ObjectId format to prevent NoSQL injection
-    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
-      return res.status(400).json({
-        error: "Invalid couple ID format",
-        code: "INVALID_OBJECT_ID",
-      });
-    }
-
-    let couple = await Couple.findById(id);
+    let couple = await Couple.findById(req.params.id);
     if (couple) {
       res.send(couple.invoiceDetails);
     } else {

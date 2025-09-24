@@ -33,7 +33,7 @@ const vendorRegister = async (req, res) => {
       res.send(result);
     }
   } catch (err) {
-    o;
+    // o;
     res.status(500).json(err);
   }
 };

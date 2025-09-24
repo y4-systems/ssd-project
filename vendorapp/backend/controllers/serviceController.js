@@ -1,61 +1,44 @@
+const mongoose = require("mongoose");
+const validator = require("validator");
 const Service = require("../models/serviceSchema");
 const Couple = require("../models/coupleSchema");
-const mongoose = require("mongoose");
-const {
-  validateObjectId,
-  sanitizeSearchQuery,
-} = require("../../../middleware/security.js");
 
+// Escape regex to prevent ReDoS and injection
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// ======================== CREATE ========================
 const serviceCreate = async (req, res) => {
   try {
     const service = new Service(req.body);
-
-    let result = await service.save();
-
+    const result = await service.save();
     res.send(result);
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json({ error: err.message });
   }
 };
 
+// ======================== READ ========================
 const getServices = async (req, res) => {
   try {
-    let services = await Service.find().populate("vendor", "shopName");
-    if (services.length > 0) {
-      res.send(services);
-    } else {
-      res.send({ message: "No services found" });
-    }
+    const services = await Service.find().populate("vendor", "shopName");
+    res.send(services.length > 0 ? services : { message: "No services found" });
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json({ error: err.message });
   }
 };
 
 const getVendorServices = async (req, res) => {
   try {
-    // Validate ObjectId to prevent NoSQL injection
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({
-        error: "Invalid vendor ID format",
-        code: "INVALID_OBJECT_ID",
-      });
+      return res.status(400).json({ error: "Invalid vendor ID" });
     }
 
-    // Convert to ObjectId for type safety
-    const vendorId = mongoose.Types.ObjectId(req.params.id);
+    const vendorId = new mongoose.Types.ObjectId(req.params.id);
+    const services = await Service.find({ vendor: vendorId });
 
-    let services = await Service.find({ vendor: vendorId });
-    if (services.length > 0) {
-      res.send(services);
-    } else {
-      res.send({ message: "No services found" });
-    }
+    res.send(services.length > 0 ? services : { message: "No services found" });
   } catch (err) {
-    console.error("Service retrieval error:", err.message);
-    res.status(500).json({
-      error: "Failed to retrieve services",
-      code: "SERVICE_RETRIEVAL_ERROR",
-    });
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -80,23 +63,13 @@ const getServiceDetail = async (req, res) => {
         select: "name",
       });
 
-    if (service) {
-      res.send(service);
-    } else {
-      res.status(404).json({
-        error: "Service not found",
-        code: "SERVICE_NOT_FOUND",
-      });
-    }
+    res.send(service ? service : { message: "No service found" });
   } catch (err) {
-    console.error("Service detail retrieval error:", err.message);
-    res.status(500).json({
-      error: "Failed to retrieve service details",
-      code: "SERVICE_DETAIL_ERROR",
-    });
+    res.status(500).json({ error: err.message });
   }
 };
 
+// ======================== UPDATE ========================
 const updateService = async (req, res) => {
   try {
     // ✅ DIRECT NoSQL INJECTION PROTECTION
@@ -113,32 +86,27 @@ const updateService = async (req, res) => {
     let result = await Service.findByIdAndUpdate(
       id,
       { $set: req.body },
-      { new: true }
+      { new: true, runValidators: true }
     );
 
-    if (result) {
-      res.send(result);
-    } else {
-      res.status(404).json({
-        error: "Service not found",
-        code: "SERVICE_NOT_FOUND",
-      });
-    }
+    res.send(result ? result : { message: "Service not found" });
   } catch (error) {
-    console.error("Service update error:", error.message);
-    res.status(500).json({
-      error: "Failed to update service",
-      code: "SERVICE_UPDATE_ERROR",
-    });
+    res.status(500).json({ error: error.message });
   }
 };
 
+// ======================== REVIEWS ========================
 const addReview = async (req, res) => {
   try {
     const { rating, comment, reviewer } = req.body;
-    const serviceId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: "Invalid service ID" });
+    }
 
+    const serviceId = new mongoose.Types.ObjectId(req.params.id);
     const service = await Service.findById(serviceId);
+
+    if (!service) return res.status(404).json({ message: "Service not found" });
 
     const existingReview = service.reviews.find(
       (review) => review.reviewer.toString() === reviewer
@@ -158,38 +126,24 @@ const addReview = async (req, res) => {
     });
 
     const updatedService = await service.save();
-
     res.send(updatedService);
   } catch (error) {
-    res.status(500).json(error);
+    res.status(500).json({ error: error.message });
   }
 };
 
+// ======================== SEARCH ========================
 const searchService = async (req, res) => {
   try {
     const key = req.params.key;
 
-    // Validate search key to prevent ReDoS
     if (!key || key.length > 100) {
-      return res.status(400).json({
-        error: "Invalid search key (max 100 characters)",
-        code: "INVALID_SEARCH_KEY",
-      });
+      return res.status(400).json({ error: "Invalid search key" });
     }
 
-    // Use safe pattern matching instead of direct regex
-    const safePattern = /^[a-zA-Z0-9\s\-_.&]+$/;
-    if (!safePattern.test(key)) {
-      return res.status(400).json({
-        error: "Search key contains invalid characters",
-        code: "INVALID_SEARCH_CHARS",
-      });
-    }
+    const safeKey = escapeRegex(validator.escape(key.trim()));
 
-    // Use MongoDB text search or safe regex with escaped input
-    const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-    let services = await Service.find({
+    const services = await Service.find({
       $or: [
         { serviceName: { $regex: escapedKey, $options: "i" } },
         { category: { $regex: escapedKey, $options: "i" } },
@@ -197,19 +151,11 @@ const searchService = async (req, res) => {
       ],
     })
       .populate("vendor", "shopName")
-      .limit(50); // Limit results to prevent DoS
+      .limit(50);
 
-    if (services.length > 0) {
-      res.send(services);
-    } else {
-      res.send({ message: "No services found" });
-    }
+    res.send(services.length > 0 ? services : { message: "No services found" });
   } catch (err) {
-    console.error("Service search error:", err.message);
-    res.status(500).json({
-      error: "Search service failed",
-      code: "SERVICE_SEARCH_ERROR",
-    });
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -242,19 +188,11 @@ const searchServicebyCategory = async (req, res) => {
       $or: [{ category: { $regex: escapedKey, $options: "i" } }],
     })
       .populate("vendor", "shopName")
-      .limit(50); // Limit results to prevent DoS
+      .limit(50);
 
-    if (services.length > 0) {
-      res.send(services);
-    } else {
-      res.send({ message: "No services found" });
-    }
+    res.send(services.length > 0 ? services : { message: "No services found" });
   } catch (err) {
-    console.error("Category search error:", err.message);
-    res.status(500).json({
-      error: "Search failed",
-      code: "CATEGORY_SEARCH_ERROR",
-    });
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -262,46 +200,25 @@ const searchServicebySubCategory = async (req, res) => {
   try {
     const key = req.params.key;
 
-    // Validate search key to prevent ReDoS and NoSQL injection
     if (!key || key.length > 100) {
-      return res.status(400).json({
-        error: "Invalid search key (max 100 characters)",
-        code: "INVALID_SEARCH_KEY",
-      });
+      return res.status(400).json({ error: "Invalid search key" });
     }
 
-    // Use safe pattern matching instead of direct regex
-    const safePattern = /^[a-zA-Z0-9\s\-_.&]+$/;
-    if (!safePattern.test(key)) {
-      return res.status(400).json({
-        error: "Search key contains invalid characters",
-        code: "INVALID_SEARCH_CHARS",
-      });
-    }
-
-    // Escape regex special characters to prevent injection
-    const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const safeKey = escapeRegex(validator.escape(key.trim()));
 
     let services = await Service.find({
       $or: [{ subcategory: { $regex: escapedKey, $options: "i" } }],
     })
       .populate("vendor", "shopName")
-      .limit(50); // Limit results to prevent DoS
+      .limit(50);
 
-    if (services.length > 0) {
-      res.send(services);
-    } else {
-      res.send({ message: "No services found" });
-    }
+    res.send(services.length > 0 ? services : { message: "No services found" });
   } catch (err) {
-    console.error("Subcategory search error:", err.message);
-    res.status(500).json({
-      error: "Search failed",
-      code: "SUBCATEGORY_SEARCH_ERROR",
-    });
+    res.status(500).json({ error: err.message });
   }
 };
 
+// ======================== DELETE ========================
 const deleteService = async (req, res) => {
   try {
     // ✅ DIRECT NoSQL INJECTION PROTECTION
@@ -317,135 +234,87 @@ const deleteService = async (req, res) => {
 
     const deletedService = await Service.findByIdAndDelete(id);
 
-    if (!deletedService) {
-      return res.status(404).json({
-        error: "Service not found",
-        code: "SERVICE_NOT_FOUND",
-      });
+    if (deletedService) {
+      await Couple.updateMany(
+        { "invoiceDetails._id": deletedService._id },
+        { $pull: { invoiceDetails: { _id: deletedService._id } } }
+      );
     }
 
-    await Couple.updateMany(
-      { "invoiceDetails._id": deletedService._id },
-      { $pull: { invoiceDetails: { _id: deletedService._id } } }
+    res.send(
+      deletedService ? deletedService : { message: "Service not found" }
     );
-
-    res.send(deletedService);
   } catch (error) {
-    console.error("Service deletion error:", error.message);
-    res.status(500).json({
-      error: "Failed to delete service",
-      code: "SERVICE_DELETE_ERROR",
-    });
+    res.status(500).json({ error: error.message });
   }
 };
 
 const deleteServices = async (req, res) => {
   try {
-    // Validate ObjectId to prevent NoSQL injection
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({
-        error: "Invalid vendor ID format",
-        code: "INVALID_OBJECT_ID",
-      });
+      return res.status(400).json({ error: "Invalid vendor ID" });
     }
 
-    // Convert to ObjectId for type safety
-    const vendorId = mongoose.Types.ObjectId(req.params.id);
-
+    const vendorId = new mongoose.Types.ObjectId(req.params.id);
     const deletionResult = await Service.deleteMany({ vendor: vendorId });
 
-    const deletedCount = deletionResult.deletedCount || 0;
-
-    if (deletedCount === 0) {
-      res.send({ message: "No services found to delete" });
-      return;
+    if (!deletionResult.deletedCount) {
+      return res.json({ message: "No services found to delete" });
     }
-
-    const deletedServices = await Service.find({ vendor: vendorId });
-
-    await Couple.updateMany(
-      {
-        "invoiceDetails._id": {
-          $in: deletedServices.map((service) => service._id),
-        },
-      },
-      {
-        $pull: {
-          invoiceDetails: {
-            _id: { $in: deletedServices.map((service) => service._id) },
-          },
-        },
-      }
-    );
 
     res.send(deletionResult);
   } catch (error) {
-    console.error("Services deletion error:", error.message);
-    res.status(500).json({
-      error: "Failed to delete services",
-      code: "SERVICES_DELETE_ERROR",
-    });
+    res.status(500).json({ error: error.message });
   }
 };
 
 const deleteServiceReview = async (req, res) => {
   try {
     const { reviewId } = req.body;
-    const serviceId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: "Invalid service ID" });
+    }
 
-    const service = await Service.findById(serviceId);
+    const service = await Service.findById(req.params.id);
+    if (!service) return res.status(404).json({ message: "Service not found" });
 
-    const updatedReviews = service.reviews.filter(
-      (review) => review._id != reviewId
+    service.reviews = service.reviews.filter(
+      (review) => review._id.toString() !== reviewId
     );
 
-    service.reviews = updatedReviews;
-
     const updatedService = await service.save();
-
     res.send(updatedService);
   } catch (error) {
-    res.status(500).json(error);
+    res.status(500).json({ error: error.message });
   }
 };
 
 const deleteAllServiceReviews = async (req, res) => {
   try {
-    // Validate ObjectId to prevent NoSQL injection
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({
-        error: "Invalid service ID format",
-        code: "INVALID_OBJECT_ID",
-      });
+      return res.status(400).json({ error: "Invalid service ID" });
     }
 
     const service = await Service.findById(req.params.id);
-
-    if (!service) {
-      return res.status(404).json({
-        error: "Service not found",
-        code: "SERVICE_NOT_FOUND",
-      });
-    }
+    if (!service) return res.status(404).json({ message: "Service not found" });
 
     service.reviews = [];
-
     const updatedService = await service.save();
 
     res.send(updatedService);
   } catch (error) {
-    console.error("Delete reviews error:", error.message);
-    res.status(500).json({
-      error: "Failed to delete reviews",
-      code: "DELETE_REVIEWS_ERROR",
-    });
+    res.status(500).json({ error: error.message });
   }
 };
 
+// ======================== INVOICE / COUPLES ========================
 const getInterestedCouples = async (req, res) => {
   try {
-    const serviceId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: "Invalid service ID" });
+    }
 
+    const serviceId = new mongoose.Types.ObjectId(req.params.id);
     const interestedCouples = await Couple.find({
       "invoiceDetails._id": serviceId,
     });
@@ -453,7 +322,7 @@ const getInterestedCouples = async (req, res) => {
     const coupleDetails = interestedCouples
       .map((couple) => {
         const invoiceItem = couple.invoiceDetails.find(
-          (item) => item._id.toString() === serviceId
+          (item) => item._id.toString() === serviceId.toString()
         );
         if (invoiceItem) {
           return {
@@ -464,37 +333,38 @@ const getInterestedCouples = async (req, res) => {
         }
         return null; // If invoiceItem is not found in this couple's invoiceDetails
       })
-      .filter((item) => item !== null); // Remove null values from the result
+      .filter((item) => item !== null);
 
-    if (coupleDetails.length > 0) {
-      res.send(coupleDetails);
-    } else {
-      res.send({ message: "No couples are interested in this service." });
-    }
+    res.send(
+      coupleDetails.length > 0
+        ? coupleDetails
+        : { message: "No couples are interested in this service." }
+    );
   } catch (error) {
-    res.status(500).json(error);
+    res.status(500).json({ error: error.message });
   }
 };
 
 const getAddedToInvoiceServices = async (req, res) => {
   try {
-    const vendorId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: "Invalid vendor ID" });
+    }
+
+    const vendorId = new mongoose.Types.ObjectId(req.params.id);
 
     const couplesWithVendorService = await Couple.find({
       "invoiceDetails.vendor": vendorId,
     });
 
-    const serviceMap = new Map(); // Use a Map to aggregate services by ID
+    const serviceMap = new Map();
     couplesWithVendorService.forEach((couple) => {
       couple.invoiceDetails.forEach((invoiceItem) => {
-        if (invoiceItem.vendor.toString() === vendorId) {
+        if (invoiceItem.vendor.toString() === vendorId.toString()) {
           const serviceId = invoiceItem._id.toString();
           if (serviceMap.has(serviceId)) {
-            // If service ID already exists, update the quantity
-            const existingService = serviceMap.get(serviceId);
-            existingService.quantity += invoiceItem.quantity;
+            serviceMap.get(serviceId).quantity += invoiceItem.quantity;
           } else {
-            // If service ID does not exist, add it to the Map
             serviceMap.set(serviceId, {
               serviceName: invoiceItem.serviceName,
               quantity: invoiceItem.quantity,
@@ -518,10 +388,11 @@ const getAddedToInvoiceServices = async (req, res) => {
       });
     }
   } catch (error) {
-    res.status(500).json(error);
+    res.status(500).json({ error: error.message });
   }
 };
 
+// ======================== EXPORT ========================
 module.exports = {
   serviceCreate,
   getServices,
