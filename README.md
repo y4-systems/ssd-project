@@ -1,10 +1,12 @@
 # SSD Project — Securing the App
 
 ## 👥 Team Members  
-- **Fonseka S.A.N.P (IT22192400)** — Implemented **Google OAuth (SSO)** & fixed **Denial of Service (ReDoS)**  
+- **Fonseka S.A.N.P (IT22192400)** — Implemented **Google OAuth (SSO)** & fixed **Denial of Service (ReDoS)**
+- **Tiny H.D.K (IT22060976)** — Fixed **Sensitive Data Exposure** & implemented **Rate Limiting**
+- **Perera R.L.S.B (IT22256164)** — Fixed **CSRF vulnerabilities** & removed **Hardcoded URLs** 
 - **Rangika G.K.H (IT22178336)** — Fixed **SQL Injection** & performed **Dependency Updates**  
-- **Perera R.L.S.B (IT22256164)** — Fixed **CSRF vulnerabilities** & removed **Hardcoded URLs**  
-- **Tiny H.D.K (IT22060976)** — Fixed **Sensitive Data Exposure** & implemented **Rate Limiting**  
+ 
+
 
 ---
 
