@@ -100,7 +100,18 @@ const adminLogIn = async (req, res) => {
 
 const getAdminDetail = async (req, res) => {
   try {
-    let admin = await Admin.findById(req.params.id);
+    // ✅ DIRECT NoSQL INJECTION PROTECTION
+    const id = req.params.id;
+
+    // Validate ObjectId format to prevent NoSQL injection
+    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        error: "Invalid admin ID format",
+        code: "INVALID_OBJECT_ID",
+      });
+    }
+
+    let admin = await Admin.findById(id);
     if (admin) {
       admin.password = undefined;
       res.send(admin);

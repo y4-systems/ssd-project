@@ -17,7 +17,7 @@ const vendorRegister = async (req, res) => {
       role,
       event,
       teachPreference,
-      teachStable
+      teachStable,
     });
 
     const existingVendorByEmail = await Vendor.findOne({ email });
@@ -27,7 +27,7 @@ const vendorRegister = async (req, res) => {
     } else {
       let result = await vendor.save();
       await Preference.findByIdAndUpdate(teachPreference, {
-        vendor: vendor._id
+        vendor: vendor._id,
       });
       result.password = undefined;
       res.send(result);
@@ -65,18 +65,18 @@ const vendorLogIn = async (req, res) => {
 
 const getVendors = async (req, res) => {
   try {
-    // Validate ObjectId to prevent NoSQL injection
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    // ✅ DIRECT NoSQL INJECTION PROTECTION
+    const id = req.params.id;
+
+    // Comprehensive ObjectId validation to prevent NoSQL injection
+    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
       return res.status(400).json({
         error: "Invalid event ID format",
-        code: "INVALID_OBJECT_ID"
+        code: "INVALID_OBJECT_ID",
       });
     }
 
-    // Convert to ObjectId for type safety
-    const eventId = mongoose.Types.ObjectId(req.params.id);
-
-    let vendors = await Vendor.find({ event: eventId })
+    let vendors = await Vendor.find({ event: id })
       .populate("teachPreference", "subName")
       .populate("teachStable", "stableName");
 
@@ -92,22 +92,25 @@ const getVendors = async (req, res) => {
     console.error("Vendors retrieval error:", err.message);
     res.status(500).json({
       error: "Failed to retrieve vendors",
-      code: "VENDORS_RETRIEVAL_ERROR"
+      code: "VENDORS_RETRIEVAL_ERROR",
     });
   }
 };
 
 const getVendorDetail = async (req, res) => {
   try {
-    // Validate ObjectId to prevent NoSQL injection
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    // ✅ DIRECT NoSQL INJECTION PROTECTION
+    const id = req.params.id;
+
+    // Comprehensive ObjectId validation to prevent NoSQL injection
+    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
       return res.status(400).json({
         error: "Invalid vendor ID format",
-        code: "INVALID_OBJECT_ID"
+        code: "INVALID_OBJECT_ID",
       });
     }
 
-    let vendor = await Vendor.findById(req.params.id)
+    let vendor = await Vendor.findById(id)
       .populate("teachPreference", "subName sessions")
       .populate("event", "eventName")
       .populate("teachStable", "stableName");
@@ -118,14 +121,14 @@ const getVendorDetail = async (req, res) => {
     } else {
       res.status(404).json({
         error: "Vendor not found",
-        code: "VENDOR_NOT_FOUND"
+        code: "VENDOR_NOT_FOUND",
       });
     }
   } catch (err) {
     console.error("Vendor detail error:", err.message);
     res.status(500).json({
       error: "Failed to retrieve vendor details",
-      code: "VENDOR_DETAIL_ERROR"
+      code: "VENDOR_DETAIL_ERROR",
     });
   }
 };
@@ -140,7 +143,7 @@ const updateVendorPreference = async (req, res) => {
     );
 
     await Preference.findByIdAndUpdate(teachPreference, {
-      vendor: updatedVendor._id
+      vendor: updatedVendor._id,
     });
 
     res.send(updatedVendor);
@@ -180,7 +183,7 @@ const deleteVendors = async (req, res) => {
     await Preference.updateMany(
       {
         vendor: { $in: deletedVendors.map((vendor) => vendor._id) },
-        vendor: { $exists: true }
+        vendor: { $exists: true },
       },
       { $unset: { vendor: "" }, $unset: { vendor: null } }
     );
@@ -194,7 +197,7 @@ const deleteVendors = async (req, res) => {
 const deleteVendorsByTable = async (req, res) => {
   try {
     const deletionResult = await Vendor.deleteMany({
-      stableName: req.params.id
+      stableName: req.params.id,
     });
 
     const deletedCount = deletionResult.deletedCount || 0;
@@ -209,7 +212,7 @@ const deleteVendorsByTable = async (req, res) => {
     await Preference.updateMany(
       {
         vendor: { $in: deletedVendors.map((vendor) => vendor._id) },
-        vendor: { $exists: true }
+        vendor: { $exists: true },
       },
       { $unset: { vendor: "" }, $unset: { vendor: null } }
     );
@@ -224,7 +227,18 @@ const vendorAttendance = async (req, res) => {
   const { status, date } = req.body;
 
   try {
-    const vendor = await Vendor.findById(req.params.id);
+    // ✅ DIRECT NoSQL INJECTION PROTECTION
+    const id = req.params.id;
+
+    // Validate ObjectId format to prevent NoSQL injection
+    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        error: "Invalid vendor ID format",
+        code: "INVALID_OBJECT_ID",
+      });
+    }
+
+    const vendor = await Vendor.findById(id);
 
     if (!vendor) {
       return res.send({ message: "Vendor not found" });
@@ -256,5 +270,5 @@ module.exports = {
   deleteVendor,
   deleteVendors,
   deleteVendorsByTable,
-  vendorAttendance
+  vendorAttendance,
 };

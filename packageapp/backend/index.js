@@ -97,11 +97,19 @@ async function run() {
       "/Package/:id",
       authenticateUser,
       requireRole(["admin"]),
-      validateObjectId,
       validateInput(schemas.package),
       async (req, res) => {
         try {
+          // ✅ DIRECT NoSQL INJECTION PROTECTION
           const id = req.params.id;
+
+          // Validate ObjectId format to prevent NoSQL injection
+          if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
+            return res.status(400).json({
+              error: "Invalid package ID format",
+              code: "INVALID_OBJECT_ID",
+            });
+          }
           const updatePackageData = req.body;
           const filter = { _id: new ObjectId(id) };
           const options = { upsert: false }; // Don't create if not exists
@@ -148,10 +156,18 @@ async function run() {
       "/Package/:id",
       authenticateUser,
       requireRole(["admin"]),
-      validateObjectId,
       async (req, res) => {
         try {
+          // ✅ DIRECT NoSQL INJECTION PROTECTION
           const id = req.params.id;
+
+          // Validate ObjectId format to prevent NoSQL injection
+          if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
+            return res.status(400).json({
+              error: "Invalid package ID format",
+              code: "INVALID_OBJECT_ID",
+            });
+          }
           const filter = { _id: new ObjectId(id) };
 
           // Check if package exists
@@ -181,9 +197,18 @@ async function run() {
 
     //To get single package data
 
-    app.get("/package/:id", validateObjectId, async (req, res) => {
+    app.get("/package/:id", async (req, res) => {
       try {
+        // ✅ DIRECT NoSQL INJECTION PROTECTION
         const id = req.params.id;
+
+        // Validate ObjectId format to prevent NoSQL injection
+        if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
+          return res.status(400).json({
+            error: "Invalid package ID format",
+            code: "INVALID_OBJECT_ID",
+          });
+        }
         const filter = { _id: new ObjectId(id) };
         const result = await Packagecollection.findOne(filter);
 

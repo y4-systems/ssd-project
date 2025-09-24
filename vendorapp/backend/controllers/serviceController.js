@@ -44,16 +44,23 @@ const getVendorServices = async (req, res) => {
 
 const getServiceDetail = async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ error: "Invalid service ID" });
+    // ✅ DIRECT NoSQL INJECTION PROTECTION
+    const id = req.params.id;
+
+    // Comprehensive ObjectId validation to prevent NoSQL injection
+    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        error: "Invalid service ID format",
+        code: "INVALID_OBJECT_ID",
+      });
     }
 
-    const service = await Service.findById(req.params.id)
+    let service = await Service.findById(id)
       .populate("vendor", "shopName")
       .populate({
         path: "reviews.reviewer",
         model: "couple",
-        select: "name"
+        select: "name",
       });
 
     res.send(service ? service : { message: "No service found" });
@@ -65,12 +72,19 @@ const getServiceDetail = async (req, res) => {
 // ======================== UPDATE ========================
 const updateService = async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ error: "Invalid service ID" });
+    // ✅ DIRECT NoSQL INJECTION PROTECTION
+    const id = req.params.id;
+
+    // Comprehensive ObjectId validation to prevent NoSQL injection
+    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        error: "Invalid service ID format",
+        code: "INVALID_OBJECT_ID",
+      });
     }
 
-    const result = await Service.findByIdAndUpdate(
-      req.params.id,
+    let result = await Service.findByIdAndUpdate(
+      id,
       { $set: req.body },
       { new: true, runValidators: true }
     );
@@ -100,7 +114,7 @@ const addReview = async (req, res) => {
 
     if (existingReview) {
       return res.send({
-        message: "You have already submitted a review for this service."
+        message: "You have already submitted a review for this service.",
       });
     }
 
@@ -108,7 +122,7 @@ const addReview = async (req, res) => {
       rating,
       comment,
       reviewer,
-      date: new Date()
+      date: new Date(),
     });
 
     const updatedService = await service.save();
@@ -133,8 +147,8 @@ const searchService = async (req, res) => {
       $or: [
         { serviceName: { $regex: safeKey, $options: "i" } },
         { category: { $regex: safeKey, $options: "i" } },
-        { subcategory: { $regex: safeKey, $options: "i" } }
-      ]
+        { subcategory: { $regex: safeKey, $options: "i" } },
+      ],
     })
       .populate("vendor", "shopName")
       .limit(50);
@@ -147,16 +161,31 @@ const searchService = async (req, res) => {
 
 const searchServicebyCategory = async (req, res) => {
   try {
+    // ✅ DIRECT NoSQL INJECTION PROTECTION FOR SEARCH
     const key = req.params.key;
 
-    if (!key || key.length > 100) {
-      return res.status(400).json({ error: "Invalid search key" });
+    // Comprehensive validation to prevent ReDoS and NoSQL injection
+    if (!key || typeof key !== "string" || key.length > 100) {
+      return res.status(400).json({
+        error: "Invalid search key (max 100 characters)",
+        code: "INVALID_SEARCH_KEY",
+      });
     }
 
-    const safeKey = escapeRegex(validator.escape(key.trim()));
+    // Use safe allowlist pattern to prevent ReDoS attacks
+    const safePattern = /^[a-zA-Z0-9\s\-_.@]+$/;
+    if (!safePattern.test(key)) {
+      return res.status(400).json({
+        error: "Search key contains invalid characters",
+        code: "INVALID_SEARCH_CHARS",
+      });
+    }
 
-    const services = await Service.find({
-      category: { $regex: safeKey, $options: "i" }
+    // Escape regex special characters to prevent injection
+    const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    let services = await Service.find({
+      $or: [{ category: { $regex: escapedKey, $options: "i" } }],
     })
       .populate("vendor", "shopName")
       .limit(50);
@@ -177,8 +206,8 @@ const searchServicebySubCategory = async (req, res) => {
 
     const safeKey = escapeRegex(validator.escape(key.trim()));
 
-    const services = await Service.find({
-      subcategory: { $regex: safeKey, $options: "i" }
+    let services = await Service.find({
+      $or: [{ subcategory: { $regex: safeKey, $options: "i" } }],
     })
       .populate("vendor", "shopName")
       .limit(50);
@@ -192,11 +221,18 @@ const searchServicebySubCategory = async (req, res) => {
 // ======================== DELETE ========================
 const deleteService = async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ error: "Invalid service ID" });
+    // ✅ DIRECT NoSQL INJECTION PROTECTION
+    const id = req.params.id;
+
+    // Comprehensive ObjectId validation to prevent NoSQL injection
+    if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        error: "Invalid service ID format",
+        code: "INVALID_OBJECT_ID",
+      });
     }
 
-    const deletedService = await Service.findByIdAndDelete(req.params.id);
+    const deletedService = await Service.findByIdAndDelete(id);
 
     if (deletedService) {
       await Couple.updateMany(
@@ -280,7 +316,7 @@ const getInterestedCouples = async (req, res) => {
 
     const serviceId = new mongoose.Types.ObjectId(req.params.id);
     const interestedCouples = await Couple.find({
-      "invoiceDetails._id": serviceId
+      "invoiceDetails._id": serviceId,
     });
 
     const coupleDetails = interestedCouples
@@ -288,13 +324,14 @@ const getInterestedCouples = async (req, res) => {
         const invoiceItem = couple.invoiceDetails.find(
           (item) => item._id.toString() === serviceId.toString()
         );
-        return invoiceItem
-          ? {
-              coupleName: couple.name,
-              coupleID: couple._id,
-              quantity: invoiceItem.quantity
-            }
-          : null;
+        if (invoiceItem) {
+          return {
+            coupleName: couple.name,
+            coupleID: couple._id,
+            quantity: invoiceItem.quantity,
+          };
+        }
+        return null; // If invoiceItem is not found in this couple's invoiceDetails
       })
       .filter((item) => item !== null);
 
@@ -317,7 +354,7 @@ const getAddedToInvoiceServices = async (req, res) => {
     const vendorId = new mongoose.Types.ObjectId(req.params.id);
 
     const couplesWithVendorService = await Couple.find({
-      "invoiceDetails.vendor": vendorId
+      "invoiceDetails.vendor": vendorId,
     });
 
     const serviceMap = new Map();
@@ -333,21 +370,23 @@ const getAddedToInvoiceServices = async (req, res) => {
               quantity: invoiceItem.quantity,
               category: invoiceItem.category,
               subcategory: invoiceItem.subcategory,
-              serviceID: serviceId
+              serviceID: serviceId,
             });
           }
         }
       });
     });
 
-    res.send(
-      serviceMap.size > 0
-        ? Array.from(serviceMap.values())
-        : {
-            message:
-              "No services from this vendor are added to invoice by couples."
-          }
-    );
+    const servicesInInvoice = Array.from(serviceMap.values());
+
+    if (servicesInInvoice.length > 0) {
+      res.send(servicesInInvoice);
+    } else {
+      res.send({
+        message:
+          "No services from this vendor are added to invoice by couples.",
+      });
+    }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -369,5 +408,5 @@ module.exports = {
   deleteServiceReview,
   deleteAllServiceReviews,
   getInterestedCouples,
-  getAddedToInvoiceServices
+  getAddedToInvoiceServices,
 };
